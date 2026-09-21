@@ -17,6 +17,8 @@
 
 ### Day 1 — 프로젝트 초기화
 
+상태: **완료** (2026-09-21)
+
 작업:
 
 - Git 저장소와 원격 저장소 연결
@@ -34,18 +36,24 @@
 
 ### Day 2 — 디자인 토큰과 앱 셸
 
+상태: **완료** (2026-09-21)
+
 작업:
 
 - 색상, 타이포그래피, 간격 토큰
-- 공통 Button, Input, Card, Badge 기반
-- 반응형 Sidebar와 Topbar
-- Dashboard 라우트 골격
+- Sidebar, Topbar, Main Content로 구성된 공통 App Shell
+- 데스크톱 Sidebar와 모바일 Drawer 내비게이션
+- Navigation 데이터와 route active 표시 분리
+- Dashboard Mock Data 유지
+- 모바일 메뉴 포커스 트랩, Escape 닫기, 본문 바로가기
 
 완료 조건:
 
 - 데스크톱과 모바일에서 내비게이션을 사용할 수 있다.
 - 현재 경로가 시각적·텍스트적으로 구분된다.
 - 키보드로 주요 내비게이션을 조작할 수 있다.
+- 모든 메뉴가 개별 route로 이동하고 공통 App Shell을 유지한다.
+- lint, typecheck, production build가 통과한다.
 
 ### Day 3 — PostgreSQL과 Prisma
 

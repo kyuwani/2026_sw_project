@@ -68,6 +68,13 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-background">
+      <a
+        href="#main-content"
+        className="fixed left-4 top-4 z-[60] -translate-y-20 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg focus:translate-y-0"
+      >
+        본문으로 건너뛰기
+      </a>
+
       <Sidebar />
 
       {mobileMenuOpen ? (
@@ -101,7 +108,11 @@ export function AppShell({ children }: AppShellProps) {
           menuButtonRef={menuButtonRef}
           menuOpen={mobileMenuOpen}
         />
-        <main className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10"
+        >
           {children}
         </main>
       </div>
