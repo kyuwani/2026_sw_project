@@ -66,6 +66,7 @@ src/
 │  │  ├─ dashboard/
 │  │  ├─ projects/
 │  │  │  └─ [projectId]/
+│  │  ├─ tasks/
 │  │  ├─ learning/
 │  │  ├─ analytics/
 │  │  └─ profile/

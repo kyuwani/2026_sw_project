@@ -54,13 +54,14 @@
 - DevLog 로고와 서비스명
 - Dashboard
 - Projects
+- Tasks
 - Learning
 - Analytics
 - 구분선
 - Profile 또는 Settings
 - 하단 사용자 요약과 로그아웃
 
-Task는 독립 최상위 메뉴로 두기보다 Projects 안에서 프로젝트별로 관리한다. Dashboard에서는 전체 Task 요약과 마감 임박 Task를 제공한다.
+Tasks 메뉴는 전체 프로젝트의 Task를 모아 우선순위와 마감일을 확인하는 화면으로 사용한다. Task 생성과 상세 관리는 프로젝트 문맥을 유지할 수 있도록 해당 프로젝트와 연결한다.
 
 ### 4.2 상태
 
