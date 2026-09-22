@@ -14,6 +14,36 @@
 - 모바일에서도 프로젝트와 학습 기록 작성이 가능해야 한다.
 - 파괴적인 작업은 확인 절차와 명확한 문구를 제공한다.
 
+### 2.1 디자인 토큰
+
+디자인 토큰은 `src/app/globals.css`의 semantic CSS 변수로 정의하고 Tailwind CSS 4의 `@theme inline`에 연결한다. 컴포넌트에서 hex 색상을 직접 반복하지 않는다.
+
+| 개념 | 용도 |
+| --- | --- |
+| `background`, `foreground` | 앱 배경과 기본 텍스트 |
+| `card`, `card-foreground` | Card와 Dialog 표면 |
+| `surface-subtle`, `muted`, `muted-foreground` | 보조 배경과 텍스트 |
+| `border`, `input`, `ring` | 경계선, 폼 테두리, 포커스 표시 |
+| `primary`, `primary-hover`, `primary-soft` | 대표 행동과 선택 상태 |
+| `destructive`, `destructive-hover`, `destructive-soft` | 삭제와 오류 상태 |
+| `success`, `warning` | 완료와 주의 상태 |
+| `radius` | Control과 Card radius의 기준값 |
+
+향후 Dark Mode는 컴포넌트 class를 바꾸지 않고 semantic CSS 변수 값을 테마 단위로 재정의하는 방식으로 확장한다.
+
+### 2.2 공통 UI 컴포넌트
+
+- `Button`: primary, secondary, outline, ghost, destructive variant와 sm, md, lg 크기
+- `Card`: Header, Title, Description, Content, Footer 조합
+- `Input`, `Textarea`, `Select`: label, 설명, 오류, disabled 상태
+- `Badge`: 상태, 우선순위, 기술을 표현하는 semantic variant
+- `Progress`: 0~100 정규화와 progressbar ARIA 정보
+- `Dialog`: native dialog 기반 Modal, Escape·포커스 트랩·배경 닫기
+- `EmptyState`: icon, 제목, 설명, 선택적 action
+- `PageHeader`: 제목, 설명, 선택적 action의 반응형 배치
+
+variant는 TypeScript 문자열 union과 정적 class map으로 제한한다. 페이지는 임의의 색상 조합을 만들기보다 의미에 맞는 variant를 선택한다.
+
 ## 3. 전체 레이아웃
 
 ### 3.1 Desktop

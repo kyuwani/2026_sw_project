@@ -1,10 +1,13 @@
 import type { ReactNode } from "react";
 
+import { cn } from "@/lib/utils/cn";
+
 interface PageHeaderProps {
   eyebrow?: string;
   title: string;
   description: string;
   action?: ReactNode;
+  className?: string;
 }
 
 export function PageHeader({
@@ -12,9 +15,15 @@ export function PageHeader({
   title,
   description,
   action,
+  className,
 }: PageHeaderProps) {
   return (
-    <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <header
+      className={cn(
+        "flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between",
+        className,
+      )}
+    >
       <div>
         {eyebrow ? (
           <p className="mb-2 text-sm font-semibold text-primary">{eyebrow}</p>
@@ -26,7 +35,11 @@ export function PageHeader({
           {description}
         </p>
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {action ? (
+        <div className="w-full shrink-0 sm:w-auto [&>*]:w-full sm:[&>*]:w-auto">
+          {action}
+        </div>
+      ) : null}
     </header>
   );
 }

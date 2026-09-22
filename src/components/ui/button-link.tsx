@@ -1,18 +1,26 @@
 import Link from "next/link";
 import type { ComponentPropsWithoutRef } from "react";
 
-import { cn } from "@/lib/utils/cn";
+import {
+  getButtonClassName,
+  type ButtonSize,
+  type ButtonVariant,
+} from "@/components/ui/button";
+
+type ButtonLinkProps = ComponentPropsWithoutRef<typeof Link> & {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+};
 
 export function ButtonLink({
   className,
+  size = "md",
+  variant = "primary",
   ...props
-}: ComponentPropsWithoutRef<typeof Link>) {
+}: ButtonLinkProps) {
   return (
     <Link
-      className={cn(
-        "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover",
-        className,
-      )}
+      className={getButtonClassName({ variant, size, className })}
       {...props}
     />
   );

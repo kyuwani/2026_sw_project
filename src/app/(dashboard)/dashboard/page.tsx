@@ -11,7 +11,13 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button-link";
-import { Card } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Progress } from "@/components/ui/progress";
 import { StatCard } from "@/features/dashboard/components/stat-card";
@@ -74,11 +80,11 @@ export default function DashboardPage() {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)]">
-        <Card className="p-5 sm:p-6">
-          <div className="flex items-center justify-between gap-4">
+        <Card>
+          <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
             <div>
-              <h2 className="text-base font-bold text-foreground">프로젝트 진행률</h2>
-              <p className="mt-1 text-sm text-muted">현재 진행 중인 프로젝트를 확인하세요.</p>
+              <CardTitle>프로젝트 진행률</CardTitle>
+              <CardDescription>현재 진행 중인 프로젝트를 확인하세요.</CardDescription>
             </div>
             <Link
               href="/projects"
@@ -87,14 +93,17 @@ export default function DashboardPage() {
               전체 보기
               <ArrowRight aria-hidden="true" className="size-4" />
             </Link>
-          </div>
+          </CardHeader>
 
-          <div className="mt-6 space-y-5">
+          <CardContent className="space-y-5">
             {projects.map((project) => (
               <article key={project.id} className="rounded-xl border border-border p-4 sm:p-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-foreground">{project.name}</h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-semibold text-foreground">{project.name}</h3>
+                      <Badge variant="primary">진행 중</Badge>
+                    </div>
                     <p className="mt-1 truncate text-sm text-muted">{project.description}</p>
                   </div>
                   <span className="shrink-0 text-xs font-medium text-muted">
@@ -113,34 +122,36 @@ export default function DashboardPage() {
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {project.technologies.map((technology) => (
-                    <Badge key={technology}>{technology}</Badge>
+                    <Badge key={technology} variant="outline">
+                      {technology}
+                    </Badge>
                   ))}
                 </div>
               </article>
             ))}
-          </div>
+          </CardContent>
         </Card>
 
-        <Card className="p-5 sm:p-6">
-          <div className="flex items-center justify-between">
+        <Card>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
             <div>
-              <h2 className="text-base font-bold text-foreground">이번 주 학습</h2>
-              <p className="mt-1 text-sm text-muted">일별 학습 시간</p>
+              <CardTitle>이번 주 학습</CardTitle>
+              <CardDescription>일별 학습 시간</CardDescription>
             </div>
             <Badge variant="primary">목표 15시간</Badge>
-          </div>
-          <div className="mt-6">
+          </CardHeader>
+          <CardContent>
             <WeeklyStudyChart data={weeklyStudy} />
-          </div>
+          </CardContent>
         </Card>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="overflow-hidden">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4 sm:px-6">
+          <CardHeader className="flex-row items-center justify-between space-y-0 border-b border-border py-4">
             <div>
-              <h2 className="text-base font-bold text-foreground">마감 임박 Task</h2>
-              <p className="mt-1 text-sm text-muted">우선 확인할 작업 3개</p>
+              <CardTitle>마감 임박 Task</CardTitle>
+              <CardDescription>우선 확인할 작업 3개</CardDescription>
             </div>
             <Link
               href="/tasks"
@@ -148,7 +159,7 @@ export default function DashboardPage() {
             >
               전체 보기
             </Link>
-          </div>
+          </CardHeader>
           <ul className="divide-y divide-border">
             {upcomingTasks.map((task) => (
               <li key={task.id} className="flex items-center gap-3 px-5 py-4 sm:px-6">
@@ -169,10 +180,10 @@ export default function DashboardPage() {
         </Card>
 
         <Card className="overflow-hidden">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4 sm:px-6">
+          <CardHeader className="flex-row items-center justify-between space-y-0 border-b border-border py-4">
             <div>
-              <h2 className="text-base font-bold text-foreground">최근 학습 기록</h2>
-              <p className="mt-1 text-sm text-muted">꾸준히 쌓이고 있는 학습 로그</p>
+              <CardTitle>최근 학습 기록</CardTitle>
+              <CardDescription>꾸준히 쌓이고 있는 학습 로그</CardDescription>
             </div>
             <Link
               href="/learning"
@@ -180,7 +191,7 @@ export default function DashboardPage() {
             >
               전체 보기
             </Link>
-          </div>
+          </CardHeader>
           <ul className="divide-y divide-border">
             {learningLogs.map((log) => (
               <li key={log.id} className="flex items-center gap-4 px-5 py-4 sm:px-6">

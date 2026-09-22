@@ -55,7 +55,27 @@
 - 모든 메뉴가 개별 route로 이동하고 공통 App Shell을 유지한다.
 - lint, typecheck, production build가 통과한다.
 
-### Day 3 — PostgreSQL과 Prisma
+### Day 3 — 기본 디자인 시스템
+
+상태: **완료** (2026-09-22)
+
+작업:
+
+- semantic 색상, radius, shadow 디자인 토큰
+- Button, Card, Input, Textarea, Badge, Progress, Select
+- native dialog 기반 Dialog와 공통 EmptyState
+- 반응형 PageHeader
+- Dashboard의 PageHeader, 통계 Card, Badge, Progress 적용
+
+완료 조건:
+
+- 공통 컴포넌트가 페이지 도메인에 종속되지 않는다.
+- Dialog 외 컴포넌트는 불필요한 Client Component 경계를 만들지 않는다.
+- 폼 컴포넌트가 label, 오류, disabled와 focus 상태를 지원한다.
+- Dashboard Mock Data와 기존 App Shell이 그대로 동작한다.
+- lint, typecheck, production build가 통과한다.
+
+### Day 4 — PostgreSQL과 Prisma
 
 작업:
 
@@ -72,37 +92,26 @@
 - 서버에서 DB 연결 확인 쿼리가 성공한다.
 - `DATABASE.md`와 실제 Schema가 일치한다.
 
-### Day 4 — 인증 기반
+### Day 5 — 사용자 인증
 
 작업:
 
 - Auth.js와 Prisma Adapter 구성
-- 세션 타입 확장
-- 로그인·로그아웃
-- 보호된 Dashboard 라우트
-- 인증 환경 변수 검증
-
-완료 조건:
-
-- 비로그인 사용자가 보호 화면에 접근할 수 없다.
-- 로그인 사용자가 Dashboard에 접근하고 로그아웃할 수 있다.
-- 세션의 사용자 ID를 서버에서 안전하게 읽을 수 있다.
-
-### Day 5 — 회원가입과 GitHub OAuth
-
-작업:
-
+- 세션 타입 확장과 보호된 Dashboard 라우트
 - 이메일 회원가입
-- 비밀번호 해싱과 Credentials 로그인
+- 비밀번호 해싱과 로그인·로그아웃
 - GitHub OAuth
 - 로그인·회원가입 화면 오류 처리
 - 인증 핵심 테스트
 
 완료 조건:
 
+- 비로그인 사용자가 보호 화면에 접근할 수 없다.
 - 이메일 가입 후 로그인할 수 있다.
+- 로그인 사용자가 Dashboard에 접근하고 로그아웃할 수 있다.
 - 중복 이메일과 잘못된 입력이 안전하게 거절된다.
 - GitHub OAuth 로그인 후 User와 Account가 올바르게 연결된다.
+- 세션의 사용자 ID를 서버에서 안전하게 읽을 수 있다.
 - 비밀번호와 OAuth 토큰이 응답 또는 로그에 노출되지 않는다.
 
 ## 3. Week 2 — Project와 Task
