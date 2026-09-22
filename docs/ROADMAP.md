@@ -77,20 +77,29 @@
 
 ### Day 4 — PostgreSQL과 Prisma
 
+상태: **완료** (2026-09-22, PostgreSQL 연결 및 초기 migration 대기)
+
 작업:
 
-- DB 호스팅 또는 로컬 DB 방식 결정
-- Prisma 설치와 설정
+- 안정 버전 Prisma ORM 7.10.0과 PostgreSQL driver adapter 설정
 - User, Project, Task, LearningLog, Technology 기본 모델
-- 첫 migration과 개발용 seed
-- Prisma Client 구성
+- ProjectTechnology, LearningLogTechnology 명시적 관계 모델
+- 환경변수 검증과 Prisma Client singleton 구성
+- 실제 Schema 기준 `DATABASE.md` 갱신
 
 완료 조건:
 
-- migration을 빈 DB에 적용할 수 있다.
-- seed를 반복 실행해도 중복 기술 데이터가 생기지 않는다.
-- 서버에서 DB 연결 확인 쿼리가 성공한다.
+- Schema format, validation과 Prisma Client generation이 통과한다.
+- Prisma CLI와 Client 버전이 일치한다.
+- 실제 DB 연결 문자열이 Git 추적 대상에 포함되지 않는다.
 - `DATABASE.md`와 실제 Schema가 일치한다.
+
+DB 연결 후 후속 확인:
+
+- PostgreSQL 호스팅 또는 로컬 DB 방식을 결정한다.
+- 실제 `DATABASE_URL`을 설정하고 `init` migration을 생성·적용한다.
+- 서버에서 DB 연결 확인 쿼리를 실행한다.
+- 개발용 seed 도입 시 Technology `upsert`로 반복 실행 안전성을 보장한다.
 
 ### Day 5 — 사용자 인증
 

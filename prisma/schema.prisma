@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  COMPLETED
+  ARCHIVED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model User {
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String?
+  email        String        @unique
+  image        String?
+  projects     Project[]
+  learningLogs LearningLog[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Project {
+  id            String              @id @default(uuid()) @db.Uuid
+  title         String
+  description   String?             @db.Text
+  status        ProjectStatus       @default(PLANNING)
+  startDate     DateTime?           @db.Date
+  endDate       DateTime?           @db.Date
+  repositoryUrl String?
+  userId        String              @db.Uuid
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks         Task[]
+  technologies  ProjectTechnology[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, updatedAt])
+}
+
+model Task {
+  id          String       @id @default(uuid()) @db.Uuid
+  title       String
+  description String?      @db.Text
+  status      TaskStatus   @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  dueDate     DateTime?    @db.Date
+  projectId   String       @db.Uuid
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([projectId, status])
+  @@index([projectId, dueDate])
+}
+
+model LearningLog {
+  id           String                  @id @default(uuid()) @db.Uuid
+  title        String
+  content      String                  @db.Text
+  studyMinutes Int
+  studiedAt    DateTime                @db.Date
+  userId       String                  @db.Uuid
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  technologies LearningLogTechnology[]
+  createdAt    DateTime                @default(now())
+  updatedAt    DateTime                @updatedAt
+
+  @@index([userId, studiedAt])
+}
+
+model Technology {
+  id           String                  @id @default(uuid()) @db.Uuid
+  name         String                  @unique
+  projects     ProjectTechnology[]
+  learningLogs LearningLogTechnology[]
+  createdAt    DateTime                @default(now())
+}
+
+model ProjectTechnology {
+  projectId    String     @db.Uuid
+  technologyId String     @db.Uuid
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  technology   Technology @relation(fields: [technologyId], references: [id], onDelete: Restrict)
+  createdAt    DateTime   @default(now())
+
+  @@id([projectId, technologyId])
+  @@index([technologyId])
+}
+
+model LearningLogTechnology {
+  learningLogId String      @db.Uuid
+  technologyId  String      @db.Uuid
+  learningLog   LearningLog @relation(fields: [learningLogId], references: [id], onDelete: Cascade)
+  technology    Technology  @relation(fields: [technologyId], references: [id], onDelete: Restrict)
+  createdAt     DateTime    @default(now())
+
+  @@id([learningLogId, technologyId])
+  @@index([technologyId])
+}

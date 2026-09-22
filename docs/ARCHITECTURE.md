@@ -299,6 +299,15 @@ GitHub API 장애가 프로젝트 자체 데이터 조회를 막지 않도록 �
 
 환경 변수는 서버 시작 또는 빌드 시 Zod로 검증한다. 클라이언트 공개가 필요한 값만 `NEXT_PUBLIC_` 접두사를 사용한다.
 
+### 12.1 Prisma 데이터 계층
+
+- Prisma ORM 7의 `prisma-client` generator와 명시적 출력 경로를 사용한다.
+- PostgreSQL 연결은 `pg` 기반 `@prisma/adapter-pg`를 사용한다.
+- CLI 설정과 migration 경로는 루트의 `prisma.config.ts`에서 관리한다.
+- Next.js 외부에서 실행되는 Prisma CLI도 동일한 환경변수 우선순위를 사용하도록 `@next/env`로 루트 `.env*` 파일을 로드한다.
+- `src/lib/db/prisma.ts`만 Prisma Client를 생성하며 개발 Hot Reload 중에는 `globalThis`에 인스턴스를 보존한다.
+- DB 모듈과 환경변수 모듈은 `server-only` 경계로 Client Component import를 차단한다.
+
 ## 13. 배포 구조
 
 - Vercel Preview와 Production 환경을 분리한다.
