@@ -15,7 +15,9 @@
 - 공통 Client: `src/lib/db/prisma.ts`
 - 연결 환경변수: `DATABASE_URL`
 
-실제 PostgreSQL 연결 정보가 아직 제공되지 않았으므로 초기 migration과 연결 확인은 미실행 상태다. Day 5 최종 Schema review와 DB 연결 없이 가능한 Schema format, validation, Prisma Client 생성은 완료했다.
+개발 환경에서는 Docker `postgres:17-alpine` 컨테이너 `devlog-postgres`를 사용한다. 포트는 `127.0.0.1:5432`에만 바인딩하고, 개발 전용 trust 인증을 사용하므로 이 설정을 Production에 재사용하지 않는다. 연결 문자열과 개발용 `AUTH_SECRET`은 Git에서 제외되는 `.env.local`에 저장한다.
+
+2026-09-29에 인증 모델을 포함한 초기 migration `20260929071200_init`을 생성·적용했다. Prisma Client 생성, Schema validation과 실제 테이블 생성을 확인했다. GitHub OAuth 자격 증명은 로컬 `.env.local`에만 설정했으며, callback과 계정 연결을 검증했다.
 
 ## 3. 설계 원칙
 
@@ -41,7 +43,7 @@ User
 - User는 여러 Project와 LearningLog를 가진다.
 - Task의 소유자는 별도 `userId`를 중복 저장하지 않고 Project의 User 관계로 판별한다.
 - Project와 Technology, LearningLog와 Technology는 각각 명시적 다대다 관계다.
-- 현재 Day 4에는 Auth.js 전용 Account, Session, VerificationToken 모델을 추가하지 않는다. 실제 Auth.js 버전과 Adapter 전략을 결정할 때 추가한다.
+- Day 6에서 Auth.js Prisma Adapter용 Account, Session, VerificationToken 모델을 추가했다.
 
 ## 5. Enum
 
@@ -83,15 +85,23 @@ DB enum 값은 UI 표시 문구와 분리한다. 예를 들어 `IN_PROGRESS`는 
 | `id` | UUID | PK, 자동 생성 |
 | `name` | String? | 표시 이름, OAuth 응답을 고려해 선택값 |
 | `email` | String? | unique, 이메일을 제공하지 않는 OAuth 계정 허용 |
+| `emailVerified` | DateTime? | Adapter 호환 이메일 인증 시각 |
 | `image` | String? | 프로필 이미지 URL |
+| `passwordHash` | String? | 이메일 로그인용 bcrypt 해시, OAuth 사용자는 null |
 | `createdAt` | DateTime | 생성 시각, 기본값 `now()` |
 | `updatedAt` | DateTime | Prisma `@updatedAt` |
 
-관계: `projects`, `learningLogs`.
+관계: `accounts`, `sessions`, `projects`, `learningLogs`.
 
-Auth.js 연동 시에도 기본 User 식별자, 이메일, 이름, 이미지 필드를 그대로 사용할 수 있다. PostgreSQL unique 제약은 null을 여러 건 허용하므로 OAuth 사용자는 이메일 없이 생성할 수 있고, 이메일 기반 가입은 애플리케이션에서 이메일을 필수로 검증한다. 인증 전용 필드는 실제 Adapter 요구사항을 확인한 뒤 확장한다.
+PostgreSQL unique 제약은 null을 여러 건 허용하므로 OAuth 사용자는 이메일 없이 생성할 수 있고, 이메일 기반 가입은 애플리케이션에서 이메일을 필수로 검증한다. 비밀번호 원문은 저장하지 않으며 bcrypt 해시만 저장한다.
 
-### 6.2 Project
+### 6.2 Account, Session, VerificationToken
+
+Auth.js Prisma Adapter가 요구하는 표준 모델이다. Account는 Provider 계정 식별자와 토큰을 저장하며, User 삭제 시 cascade 된다. MVP 세션은 JWT 방식이므로 Session 모델은 현재 런타임 세션 저장에 사용하지 않지만 Adapter 호환성을 위해 유지한다. VerificationToken은 향후 이메일 인증에 사용할 수 있다.
+
+Account의 `(provider, providerAccountId)`와 Session의 `sessionToken`은 unique다. 각 User 관계에는 사용자 기준 인덱스를 둔다.
+
+### 6.3 Project
 
 사용자가 관리하는 개발 프로젝트다.
 
@@ -112,7 +122,7 @@ Auth.js 연동 시에도 기본 User 식별자, 이메일, 이름, 이미지 필
 
 계획 단계에서 날짜나 Repository가 정해지지 않은 프로젝트를 저장할 수 있도록 `startDate`, `endDate`, `repositoryUrl`은 선택값으로 유지한다. `endDate >= startDate`와 Repository URL 형식은 CRUD 구현 시 서버 입력 검증에서 보장한다.
 
-### 6.3 Task
+### 6.4 Task
 
 Project에 속하는 작업 단위다.
 
@@ -131,7 +141,7 @@ Project에 속하는 작업 단위다.
 
 관계: `project`. Task 소유권은 `project.userId`를 통해 검증한다. `completedAt`은 완료 시점 기반 최근 활동과 기간별 분석을 위해 저장하며, `DONE` 전환 시 기록하고 다른 상태로 되돌릴 때 null로 만드는 규칙은 Task 서비스에서 트랜잭션으로 보장한다.
 
-### 6.4 LearningLog
+### 6.5 LearningLog
 
 사용자의 날짜별 학습 기록이다.
 
@@ -150,7 +160,7 @@ Project에 속하는 작업 단위다.
 
 `studyMinutes`의 양수 여부와 상한은 Learning Log 입력 스키마에서 검증한다.
 
-### 6.5 Technology
+### 6.6 Technology
 
 Project와 LearningLog가 공유하는 정규화된 기술 이름이다.
 
@@ -164,7 +174,7 @@ Project와 LearningLog가 공유하는 정규화된 기술 이름이다.
 
 MVP 필드만 유지하며 기술 카테고리, 아이콘, 별칭은 실제 요구가 생길 때 확장한다.
 
-### 6.6 ProjectTechnology
+### 6.7 ProjectTechnology
 
 Project와 Technology의 명시적 연결 모델이다.
 
@@ -174,7 +184,7 @@ Project와 Technology의 명시적 연결 모델이다.
 | `technologyId` | UUID | 복합 PK, FK → Technology |
 | `createdAt` | DateTime | 연결 시각 |
 
-### 6.7 LearningLogTechnology
+### 6.8 LearningLogTechnology
 
 LearningLog와 Technology의 명시적 연결 모델이다.
 
@@ -212,6 +222,9 @@ MVP에는 soft delete를 도입하지 않는다. User 삭제는 영향 범위가
 ### Unique / Primary Key
 
 - `User.email`: 값이 있는 사용자의 로그인·계정 연결 중복 방지. null OAuth 계정은 여러 건 허용
+- `Account(provider, providerAccountId)`: Provider 계정 중복 연결 방지
+- `Session.sessionToken`: Adapter 세션 토큰 중복 방지
+- `VerificationToken.token` 및 `(identifier, token)`: 인증 토큰 중복 방지
 - `Technology.name`: 기술 사전 중복 방지
 - `ProjectTechnology(projectId, technologyId)`: 프로젝트의 기술 중복 연결 방지
 - `LearningLogTechnology(learningLogId, technologyId)`: 학습 기록의 기술 중복 연결 방지
@@ -225,6 +238,8 @@ MVP에는 soft delete를 도입하지 않는다. User 삭제는 영향 범위가
 | Task | `(projectId, status)` | 프로젝트별 Task와 상태 필터 |
 | Task | `(projectId, dueDate)` | 프로젝트별 마감일 정렬·조회 |
 | LearningLog | `(userId, studiedAt)` | 사용자별 날짜 범위·최신 학습 기록 |
+| Account | `(userId)` | 사용자별 연결 계정 조회 및 User FK 처리 |
+| Session | `(userId)` | 사용자별 Adapter 세션 조회 및 User FK 처리 |
 | ProjectTechnology | `(technologyId)` | 기술별 프로젝트 역방향 조회와 FK 처리 |
 | LearningLogTechnology | `(technologyId)` | 기술별 학습 기록 역방향 조회와 FK 처리 |
 
@@ -234,8 +249,8 @@ MVP에는 soft delete를 도입하지 않는다. User 삭제는 영향 범위가
 
 ## 10. Migration과 Seed
 
-- Day 5 확인 시에도 실제 `DATABASE_URL`이 없으므로 초기 migration은 생성·적용하지 않았다.
-- DB 연결 후 `npm run db:migrate -- --name init`으로 초기 migration을 생성하고 빈 PostgreSQL DB 적용 결과를 확인한다.
+- 초기 migration `20260929071200_init`을 `npm run db:migrate -- --name init`으로 생성·적용했다.
+- 로컬 PostgreSQL에서 Auth.js 및 도메인 테이블 10개와 `_prisma_migrations` 생성을 확인했다.
 - Production에서는 `prisma migrate dev`를 실행하지 않는다.
 - Day 4에는 seed를 구현하지 않았다.
 - 추후 seed는 `prisma/seed.ts`에 두고 Technology를 `upsert`해 반복 실행 시 중복이 생기지 않도록 구성할 수 있다.
@@ -243,7 +258,7 @@ MVP에는 soft delete를 도입하지 않는다. User 삭제는 영향 범위가
 ## 11. 후속 검토 사항
 
 - PostgreSQL 호스팅 업체와 pooled/direct URL 전략
-- Auth.js 버전과 Adapter에 따른 Account, Session, VerificationToken 모델
+- Production 환경의 PostgreSQL 연결과 GitHub OAuth callback URL을 설정하고 배포 환경에서 인증을 확인
 - User 삭제 전 유예·복구 정책
 - 입력 길이, 날짜 순서, 학습 시간의 서버 검증
 - 실제 쿼리 측정 후 인덱스 조정
