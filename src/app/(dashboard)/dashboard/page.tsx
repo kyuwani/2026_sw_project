@@ -41,7 +41,7 @@ export default function DashboardPage() {
         title="좋은 오후예요, 김개발님"
         description="오늘의 개발 흐름을 확인하고, 가장 중요한 작업부터 이어가세요."
         action={
-          <ButtonLink href="/projects">
+          <ButtonLink href="/projects/new">
             <Plus aria-hidden="true" className="size-4" />
             새 프로젝트
           </ButtonLink>

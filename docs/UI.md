@@ -201,11 +201,12 @@ Tasks 메뉴는 전체 프로젝트의 Task를 모아 우선순위와 마감일�
 - 설명
 - 상태
 - 시작일과 종료일
-- 기술 스택 다중 선택
+- Next.js, React, TypeScript 등 기본 기술 스택 다중 선택
 - GitHub Repository 선택 또는 URL 정보
 - 저장 및 취소
 
 프로젝트 생성 시 Task 입력까지 한 화면에 넣지 않는다.
+선택한 기술은 프로젝트 생성 transaction 안에서 이름 기준으로 upsert하고 연결한다.
 
 ### 8.3 프로젝트 상세
 
