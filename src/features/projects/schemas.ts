@@ -134,6 +134,8 @@ export const projectListSearchParamsSchema = z
     status,
   }));
 
+export const projectIdSchema = z.uuid("올바르지 않은 프로젝트입니다.");
+
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type ProjectListFilters = z.infer<
   typeof projectListSearchParamsSchema
@@ -151,4 +153,10 @@ export type ProjectField =
 export interface CreateProjectActionState {
   message?: string;
   fieldErrors?: Partial<Record<ProjectField, string[]>>;
+}
+
+export type UpdateProjectActionState = CreateProjectActionState;
+
+export interface DeleteProjectActionState {
+  message?: string;
 }

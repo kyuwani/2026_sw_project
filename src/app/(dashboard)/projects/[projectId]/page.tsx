@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   GitFork,
   ListChecks,
+  Pencil,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -23,6 +24,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { Progress } from "@/components/ui/progress";
 import { ProjectStatusBadge } from "@/features/projects/components/project-status-badge";
+import { DeleteProjectDialog } from "@/features/projects/components/delete-project-dialog";
 import { getProjectDetail } from "@/features/projects/queries";
 
 export const metadata: Metadata = { title: "프로젝트 상세" };
@@ -35,7 +37,10 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
 
 interface ProjectDetailPageProps {
   params: Promise<{ projectId: string }>;
+  searchParams: Promise<{ updated?: string | string[] }>;
 }
+
+const successSearchParamSchema = z.literal("1");
 
 function formatDate(date: Date | null): string {
   return date ? dateFormatter.format(date) : "미정";
@@ -43,6 +48,7 @@ function formatDate(date: Date | null): string {
 
 export default async function ProjectDetailPage({
   params,
+  searchParams,
 }: ProjectDetailPageProps) {
   const session = await auth();
 
@@ -65,6 +71,10 @@ export default async function ProjectDetailPage({
     notFound();
   }
 
+  const projectUpdated = successSearchParamSchema.safeParse(
+    (await searchParams).updated,
+  ).success;
+
   return (
     <div className="space-y-8">
       <ButtonLink href="/projects" size="sm" variant="ghost">
@@ -75,8 +85,35 @@ export default async function ProjectDetailPage({
         eyebrow="Project"
         title={project.title}
         description="프로젝트 정보와 현재 진행 상황을 확인합니다."
-        action={<ProjectStatusBadge status={project.status} />}
+        action={
+          <div className="flex flex-wrap items-center gap-3">
+            <ProjectStatusBadge status={project.status} />
+            <ButtonLink href={`/projects/${project.id}/edit`} variant="outline">
+              <Pencil aria-hidden="true" className="size-4" />
+              수정
+            </ButtonLink>
+          </div>
+        }
       />
+
+      {projectUpdated ? (
+        <Card className="border-success/30 bg-success-soft shadow-none">
+          <CardContent className="flex items-start gap-3 py-5 sm:py-6">
+            <CheckCircle2
+              aria-hidden="true"
+              className="mt-0.5 size-5 shrink-0 text-success"
+            />
+            <div>
+              <p className="font-semibold text-foreground">
+                프로젝트를 수정했습니다.
+              </p>
+              <p className="mt-1 text-sm leading-6 text-muted">
+                변경한 정보와 기술 스택이 반영되었습니다.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <section aria-label="프로젝트 진행 현황" className="grid gap-4 sm:grid-cols-3">
         <Card>
@@ -178,6 +215,21 @@ export default async function ProjectDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-destructive/30 shadow-none">
+        <CardHeader>
+          <CardTitle>위험 영역</CardTitle>
+          <CardDescription>
+            프로젝트를 삭제하면 연결된 Task와 기술 정보도 함께 삭제됩니다.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DeleteProjectDialog
+            projectId={project.id}
+            projectTitle={project.title}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

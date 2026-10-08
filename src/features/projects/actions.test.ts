@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createProjectAction } from "./actions";
 import { createProject } from "./services/create-project";
+import { deleteProject } from "./services/delete-project";
+import { updateProject } from "./services/update-project";
 
 const authMock = vi.hoisted(() => vi.fn());
 
@@ -11,6 +13,8 @@ vi.mock("@/auth", () => ({ auth: authMock }));
 vi.mock("./services/create-project", () => ({
   createProject: vi.fn(),
 }));
+vi.mock("./services/delete-project", () => ({ deleteProject: vi.fn() }));
+vi.mock("./services/update-project", () => ({ updateProject: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 
@@ -76,5 +80,86 @@ describe("createProjectAction", () => {
 
     expect(result.fieldErrors?.endDate).toBeDefined();
     expect(createProject).not.toHaveBeenCalled();
+  });
+});
+
+const projectId = "550e8400-e29b-41d4-a716-446655440000";
+
+describe("updateProjectAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("updates only with the authenticated user's ID", async () => {
+    const { updateProjectAction } = await import("./actions");
+    authMock.mockResolvedValue({
+      user: { id: "user-id" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+    vi.mocked(updateProject).mockResolvedValue(true);
+
+    await updateProjectAction(projectId, {}, createValidFormData());
+
+    expect(updateProject).toHaveBeenCalledWith(
+      "user-id",
+      projectId,
+      expect.objectContaining({ title: "DevLog" }),
+    );
+    expect(revalidatePath).toHaveBeenCalledWith("/projects");
+    expect(revalidatePath).toHaveBeenCalledWith(`/projects/${projectId}`);
+    expect(redirect).toHaveBeenCalledWith(`/projects/${projectId}?updated=1`);
+  });
+
+  it("returns a safe error when the project is not owned", async () => {
+    const { updateProjectAction } = await import("./actions");
+    authMock.mockResolvedValue({
+      user: { id: "other-user" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+    vi.mocked(updateProject).mockResolvedValue(false);
+
+    await expect(
+      updateProjectAction(projectId, {}, createValidFormData()),
+    ).resolves.toEqual({
+      message: "프로젝트를 찾을 수 없거나 수정 권한이 없습니다.",
+    });
+    expect(redirect).not.toHaveBeenCalled();
+  });
+});
+
+describe("deleteProjectAction", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("deletes only with the authenticated user's ID", async () => {
+    const { deleteProjectAction } = await import("./actions");
+    authMock.mockResolvedValue({
+      user: { id: "user-id" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+    vi.mocked(deleteProject).mockResolvedValue(true);
+
+    await deleteProjectAction(projectId, {}, new FormData());
+
+    expect(deleteProject).toHaveBeenCalledWith("user-id", projectId);
+    expect(revalidatePath).toHaveBeenCalledWith("/projects");
+    expect(redirect).toHaveBeenCalledWith("/projects?deleted=1");
+  });
+
+  it("does not delete another user's project", async () => {
+    const { deleteProjectAction } = await import("./actions");
+    authMock.mockResolvedValue({
+      user: { id: "other-user" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+    vi.mocked(deleteProject).mockResolvedValue(false);
+
+    await expect(
+      deleteProjectAction(projectId, {}, new FormData()),
+    ).resolves.toEqual({
+      message: "프로젝트를 찾을 수 없거나 삭제 권한이 없습니다.",
+    });
+    expect(redirect).not.toHaveBeenCalled();
   });
 });

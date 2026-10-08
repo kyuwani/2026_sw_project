@@ -14,23 +14,48 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { createProjectAction } from "@/features/projects/actions";
-import { PROJECT_TECHNOLOGY_OPTIONS } from "@/features/projects/schemas";
+import {
+  createProjectAction,
+  updateProjectAction,
+} from "@/features/projects/actions";
+import {
+  PROJECT_TECHNOLOGY_OPTIONS,
+  type ProjectStatusValue,
+} from "@/features/projects/schemas";
 
-export function ProjectForm() {
-  const [state, formAction, pending] = useActionState(createProjectAction, {});
+interface ProjectFormValues {
+  id: string;
+  title: string;
+  description: string;
+  status: ProjectStatusValue;
+  startDate: string;
+  endDate: string;
+  repositoryUrl: string;
+  technologyNames: string[];
+}
+
+interface ProjectFormProps {
+  project?: ProjectFormValues;
+}
+
+export function ProjectForm({ project }: ProjectFormProps) {
+  const action = project
+    ? updateProjectAction.bind(null, project.id)
+    : createProjectAction;
+  const [state, formAction, pending] = useActionState(action, {});
   const technologyError = state.fieldErrors?.technologyNames?.[0];
 
   return (
     <form action={formAction}>
       <Card className="overflow-hidden">
         <CardHeader className="border-b border-border">
-          <CardTitle>기본 정보</CardTitle>
+          <CardTitle>{project ? "프로젝트 수정" : "기본 정보"}</CardTitle>
         </CardHeader>
 
         <CardContent className="grid gap-6 pt-5 sm:pt-6">
           <Input
             autoComplete="off"
+            defaultValue={project?.title}
             error={state.fieldErrors?.title?.[0]}
             id="title"
             label="프로젝트 이름"
@@ -42,6 +67,7 @@ export function ProjectForm() {
 
           <Textarea
             error={state.fieldErrors?.description?.[0]}
+            defaultValue={project?.description}
             id="description"
             label="설명"
             maxLength={2000}
@@ -51,7 +77,7 @@ export function ProjectForm() {
           />
 
           <Select
-            defaultValue="PLANNING"
+            defaultValue={project?.status ?? "PLANNING"}
             error={state.fieldErrors?.status?.[0]}
             id="status"
             label="상태"
@@ -67,6 +93,7 @@ export function ProjectForm() {
           <div className="grid gap-5 sm:grid-cols-2">
             <Input
               error={state.fieldErrors?.startDate?.[0]}
+              defaultValue={project?.startDate}
               id="startDate"
               label="시작일"
               name="startDate"
@@ -74,6 +101,7 @@ export function ProjectForm() {
             />
             <Input
               error={state.fieldErrors?.endDate?.[0]}
+              defaultValue={project?.endDate}
               id="endDate"
               label="종료일"
               name="endDate"
@@ -83,6 +111,7 @@ export function ProjectForm() {
 
           <Input
             description="GitHub 저장소를 연결할 경우 전체 URL을 입력해 주세요."
+            defaultValue={project?.repositoryUrl}
             error={state.fieldErrors?.repositoryUrl?.[0]}
             id="repositoryUrl"
             label="GitHub Repository"
@@ -108,6 +137,7 @@ export function ProjectForm() {
                 >
                   <input
                     className="size-4 accent-primary"
+                    defaultChecked={project?.technologyNames.includes(technology)}
                     name="technologyNames"
                     type="checkbox"
                     value={technology}
@@ -139,11 +169,14 @@ export function ProjectForm() {
         </CardContent>
 
         <CardFooter>
-          <ButtonLink href="/projects" variant="outline">
+          <ButtonLink
+            href={project ? `/projects/${project.id}` : "/projects"}
+            variant="outline"
+          >
             취소
           </ButtonLink>
           <Button loading={pending} loadingLabel="저장 중" type="submit">
-            프로젝트 만들기
+            {project ? "변경사항 저장" : "프로젝트 만들기"}
           </Button>
         </CardFooter>
       </Card>

@@ -1,15 +1,17 @@
-import { FolderKanban, Plus } from "lucide-react";
+import { CheckCircle2, FolderKanban, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { ButtonLink } from "@/components/ui/button-link";
+import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { ProjectCard } from "@/features/projects/components/project-card";
 import { ProjectFilterForm } from "@/features/projects/components/project-filter-form";
 import { listProjects } from "@/features/projects/queries";
 import { projectListSearchParamsSchema } from "@/features/projects/schemas";
+import { z } from "zod";
 
 export const metadata: Metadata = { title: "Projects" };
 
@@ -17,8 +19,11 @@ interface ProjectsPageProps {
   searchParams: Promise<{
     q?: string | string[];
     status?: string | string[];
+    deleted?: string | string[];
   }>;
 }
+
+const successSearchParamSchema = z.literal("1");
 
 export default async function ProjectsPage({
   searchParams,
@@ -29,9 +34,13 @@ export default async function ProjectsPage({
     redirect("/login");
   }
 
-  const filters = projectListSearchParamsSchema.parse(await searchParams);
+  const rawSearchParams = await searchParams;
+  const filters = projectListSearchParamsSchema.parse(rawSearchParams);
   const projects = await listProjects(session.user.id, filters);
   const hasFilters = Boolean(filters.query || filters.status);
+  const projectDeleted = successSearchParamSchema.safeParse(
+    rawSearchParams.deleted,
+  ).success;
 
   return (
     <div className="space-y-8">
@@ -45,6 +54,24 @@ export default async function ProjectsPage({
           </ButtonLink>
         }
       />
+      {projectDeleted ? (
+        <Card className="border-success/30 bg-success-soft shadow-none">
+          <CardContent className="flex items-start gap-3 py-5 sm:py-6">
+            <CheckCircle2
+              aria-hidden="true"
+              className="mt-0.5 size-5 shrink-0 text-success"
+            />
+            <div>
+              <p className="font-semibold text-foreground">
+                프로젝트를 삭제했습니다.
+              </p>
+              <p className="mt-1 text-sm leading-6 text-muted">
+                연결된 Task와 기술 정보도 함께 정리되었습니다.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
       <ProjectFilterForm filters={filters} />
       {projects.length > 0 ? (
         <section aria-label="프로젝트 목록" className="grid gap-5 lg:grid-cols-2">

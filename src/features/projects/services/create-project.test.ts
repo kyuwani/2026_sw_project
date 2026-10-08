@@ -21,21 +21,26 @@ const input: CreateProjectInput = {
 };
 
 describe("createProject", () => {
-  const technologyUpsert = vi.fn();
+  const technologyCreateMany = vi.fn();
+  const technologyFindMany = vi.fn();
   const projectCreate = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(prisma.$transaction).mockImplementation(async (operation) =>
       operation({
-        technology: { upsert: technologyUpsert },
+        technology: {
+          createMany: technologyCreateMany,
+          findMany: technologyFindMany,
+        },
         project: { create: projectCreate },
       } as unknown as Prisma.TransactionClient),
     );
   });
 
   it("stores the project owner and technology links in one transaction", async () => {
-    technologyUpsert.mockResolvedValue({ id: "technology-id" });
+    technologyCreateMany.mockResolvedValue({ count: 1 });
+    technologyFindMany.mockResolvedValue([{ id: "technology-id" }]);
     projectCreate.mockResolvedValue({ id: "project-id" });
 
     await expect(createProject("user-id", input)).resolves.toEqual({
@@ -43,10 +48,12 @@ describe("createProject", () => {
     });
 
     expect(prisma.$transaction).toHaveBeenCalledOnce();
-    expect(technologyUpsert).toHaveBeenCalledWith({
-      where: { name: "Next.js" },
-      update: {},
-      create: { name: "Next.js" },
+    expect(technologyCreateMany).toHaveBeenCalledWith({
+      data: [{ name: "Next.js" }],
+      skipDuplicates: true,
+    });
+    expect(technologyFindMany).toHaveBeenCalledWith({
+      where: { name: { in: ["Next.js"] } },
       select: { id: true },
     });
     expect(projectCreate).toHaveBeenCalledWith({
@@ -64,7 +71,8 @@ describe("createProject", () => {
 
     await createProject("user-id", { ...input, technologyNames: [] });
 
-    expect(technologyUpsert).not.toHaveBeenCalled();
+    expect(technologyCreateMany).not.toHaveBeenCalled();
+    expect(technologyFindMany).not.toHaveBeenCalled();
     expect(projectCreate).toHaveBeenCalledWith({
       data: expect.objectContaining({ technologies: undefined }),
       select: { id: true },

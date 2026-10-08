@@ -2,21 +2,16 @@ import "server-only";
 
 import type { CreateProjectInput } from "@/features/projects/schemas";
 import { prisma } from "@/lib/db/prisma";
+import { resolveTechnologies } from "./resolve-technologies";
 
 export async function createProject(
   userId: string,
   input: CreateProjectInput,
 ): Promise<{ id: string }> {
   return prisma.$transaction(async (transaction) => {
-    const technologies = await Promise.all(
-      input.technologyNames.map((name) =>
-        transaction.technology.upsert({
-          where: { name },
-          update: {},
-          create: { name },
-          select: { id: true },
-        }),
-      ),
+    const technologies = await resolveTechnologies(
+      transaction,
+      input.technologyNames,
     );
 
     return transaction.project.create({
