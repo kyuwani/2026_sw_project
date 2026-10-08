@@ -26,6 +26,8 @@ import { Progress } from "@/components/ui/progress";
 import { ProjectStatusBadge } from "@/features/projects/components/project-status-badge";
 import { DeleteProjectDialog } from "@/features/projects/components/delete-project-dialog";
 import { getProjectDetail } from "@/features/projects/queries";
+import { TaskList } from "@/features/tasks/components/task-list";
+import { listProjectTasks } from "@/features/tasks/queries";
 
 export const metadata: Metadata = { title: "프로젝트 상세" };
 
@@ -37,7 +39,12 @@ const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
 
 interface ProjectDetailPageProps {
   params: Promise<{ projectId: string }>;
-  searchParams: Promise<{ updated?: string | string[] }>;
+  searchParams: Promise<{
+    updated?: string | string[];
+    taskCreated?: string | string[];
+    taskUpdated?: string | string[];
+    taskDeleted?: string | string[];
+  }>;
 }
 
 const successSearchParamSchema = z.literal("1");
@@ -62,18 +69,38 @@ export default async function ProjectDetailPage({
     notFound();
   }
 
-  const project = await getProjectDetail(
-    session.user.id,
-    parsedProjectId.data,
-  );
+  const [project, tasks] = await Promise.all([
+    getProjectDetail(session.user.id, parsedProjectId.data),
+    listProjectTasks(session.user.id, parsedProjectId.data),
+  ]);
 
   if (!project) {
     notFound();
   }
 
-  const projectUpdated = successSearchParamSchema.safeParse(
-    (await searchParams).updated,
-  ).success;
+  const rawSearchParams = await searchParams;
+  const feedback = successSearchParamSchema.safeParse(rawSearchParams.updated)
+    .success
+    ? {
+        title: "프로젝트를 수정했습니다.",
+        description: "변경한 정보와 기술 스택이 반영되었습니다.",
+      }
+    : successSearchParamSchema.safeParse(rawSearchParams.taskCreated).success
+      ? {
+          title: "Task를 추가했습니다.",
+          description: "프로젝트 진행 현황에 새 Task가 반영되었습니다.",
+        }
+      : successSearchParamSchema.safeParse(rawSearchParams.taskUpdated).success
+        ? {
+            title: "Task를 수정했습니다.",
+            description: "변경한 상태와 우선순위가 반영되었습니다.",
+          }
+        : successSearchParamSchema.safeParse(rawSearchParams.taskDeleted).success
+          ? {
+              title: "Task를 삭제했습니다.",
+              description: "프로젝트 진행 현황이 다시 계산되었습니다.",
+            }
+          : null;
 
   return (
     <div className="space-y-8">
@@ -96,7 +123,7 @@ export default async function ProjectDetailPage({
         }
       />
 
-      {projectUpdated ? (
+      {feedback ? (
         <Card className="border-success/30 bg-success-soft shadow-none">
           <CardContent className="flex items-start gap-3 py-5 sm:py-6">
             <CheckCircle2
@@ -104,11 +131,9 @@ export default async function ProjectDetailPage({
               className="mt-0.5 size-5 shrink-0 text-success"
             />
             <div>
-              <p className="font-semibold text-foreground">
-                프로젝트를 수정했습니다.
-              </p>
+              <p className="font-semibold text-foreground">{feedback.title}</p>
               <p className="mt-1 text-sm leading-6 text-muted">
-                변경한 정보와 기술 스택이 반영되었습니다.
+                {feedback.description}
               </p>
             </div>
           </CardContent>
@@ -144,6 +169,8 @@ export default async function ProjectDetailPage({
           </CardContent>
         </Card>
       </section>
+
+      <TaskList projectId={project.id} tasks={tasks} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)]">
         <Card>
