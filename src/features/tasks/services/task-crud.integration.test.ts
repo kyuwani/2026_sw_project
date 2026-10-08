@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { getProjectDetail } from "@/features/projects/queries";
 import { prisma } from "@/lib/db/prisma";
 import { createTask } from "./create-task";
 import { deleteTask } from "./delete-task";
+import { setTaskCompletion } from "./set-task-completion";
 import { updateTask } from "./update-task";
 
 vi.mock("server-only", () => ({}));
@@ -61,6 +63,31 @@ describeWithDatabase("Task CRUD database integration", () => {
     const created = await createTask(ownerId, projectId, input);
     expect(created).not.toBeNull();
     const taskId = created?.id ?? "";
+
+    await expect(
+      setTaskCompletion(otherUserId, projectId, taskId, "DONE"),
+    ).resolves.toBe(false);
+    await expect(
+      setTaskCompletion(ownerId, projectId, taskId, "DONE"),
+    ).resolves.toBe(true);
+    await expect(getProjectDetail(ownerId, projectId)).resolves.toEqual(
+      expect.objectContaining({
+        taskCount: 1,
+        completedTaskCount: 1,
+        progress: 100,
+      }),
+    );
+
+    await expect(
+      setTaskCompletion(ownerId, projectId, taskId, "TODO"),
+    ).resolves.toBe(true);
+    await expect(getProjectDetail(ownerId, projectId)).resolves.toEqual(
+      expect.objectContaining({
+        taskCount: 1,
+        completedTaskCount: 0,
+        progress: 0,
+      }),
+    );
 
     await expect(
       updateTask(otherUserId, projectId, taskId, {

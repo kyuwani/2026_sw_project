@@ -11,6 +11,7 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import type { TaskItem } from "@/features/tasks/queries";
 import { DeleteTaskDialog } from "./delete-task-dialog";
+import { QuickTaskStatus } from "./quick-task-status";
 import { TaskPriorityBadge, TaskStatusBadge } from "./task-badges";
 
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -63,6 +64,11 @@ export function TaskList({ projectId, tasks }: TaskListProps) {
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
+                    <QuickTaskStatus
+                      projectId={projectId}
+                      status={task.status}
+                      taskId={task.id}
+                    />
                     <ButtonLink
                       href={`/projects/${projectId}/tasks/${task.id}/edit`}
                       size="sm"

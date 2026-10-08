@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { calculateTaskProgress } from "./progress";
 import type {
   ProjectListFilters,
   ProjectStatusValue,
@@ -68,10 +69,7 @@ function toProjectSummary(project: ProjectSummaryRecord): ProjectSummary {
     ),
     taskCount,
     completedTaskCount,
-    progress:
-      taskCount === 0
-        ? 0
-        : Math.round((completedTaskCount / taskCount) * 100),
+    progress: calculateTaskProgress(taskCount, completedTaskCount),
   };
 }
 

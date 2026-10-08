@@ -5,10 +5,12 @@ import { redirect } from "next/navigation";
 import {
   createTaskAction,
   deleteTaskAction,
+  setTaskCompletionAction,
   updateTaskAction,
 } from "./actions";
 import { createTask } from "./services/create-task";
 import { deleteTask } from "./services/delete-task";
+import { setTaskCompletion } from "./services/set-task-completion";
 import { updateTask } from "./services/update-task";
 
 const authMock = vi.hoisted(() => vi.fn());
@@ -16,6 +18,9 @@ const authMock = vi.hoisted(() => vi.fn());
 vi.mock("@/auth", () => ({ auth: authMock }));
 vi.mock("./services/create-task", () => ({ createTask: vi.fn() }));
 vi.mock("./services/delete-task", () => ({ deleteTask: vi.fn() }));
+vi.mock("./services/set-task-completion", () => ({
+  setTaskCompletion: vi.fn(),
+}));
 vi.mock("./services/update-task", () => ({ updateTask: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
@@ -98,5 +103,51 @@ describe("task actions", () => {
     expect(redirect).toHaveBeenCalledWith(
       `/projects/${projectId}?taskDeleted=1`,
     );
+  });
+
+  it("quickly completes a Task and revalidates progress views", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "user-id" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+    vi.mocked(setTaskCompletion).mockResolvedValue(true);
+
+    await expect(
+      setTaskCompletionAction(
+        projectId,
+        taskId,
+        "DONE",
+        {},
+        new FormData(),
+      ),
+    ).resolves.toEqual({});
+
+    expect(setTaskCompletion).toHaveBeenCalledWith(
+      "user-id",
+      projectId,
+      taskId,
+      "DONE",
+    );
+    expect(revalidatePath).toHaveBeenCalledWith(`/projects/${projectId}`);
+    expect(revalidatePath).toHaveBeenCalledWith("/projects");
+    expect(revalidatePath).toHaveBeenCalledWith("/tasks");
+  });
+
+  it("rejects an unsupported quick status before writing", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "user-id" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+
+    await expect(
+      setTaskCompletionAction(
+        projectId,
+        taskId,
+        "IN_PROGRESS",
+        {},
+        new FormData(),
+      ),
+    ).resolves.toEqual({ message: "Task 상태를 변경할 수 없습니다." });
+    expect(setTaskCompletion).not.toHaveBeenCalled();
   });
 });

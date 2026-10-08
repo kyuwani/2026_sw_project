@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { taskInputSchema } from "./schemas";
+import { taskInputSchema, taskListSearchParamsSchema } from "./schemas";
 
 const validInput = {
   title: "  프로젝트 목록 구현  ",
@@ -55,5 +55,39 @@ describe("taskInputSchema", () => {
       expect(errors.priority).toBeDefined();
       expect(errors.dueDate).toBeDefined();
     }
+  });
+});
+
+describe("taskListSearchParamsSchema", () => {
+  it("accepts multiple filters and sorting together", () => {
+    expect(
+      taskListSearchParamsSchema.parse({
+        status: "IN_PROGRESS",
+        priority: "HIGH",
+        due: "OVERDUE",
+        sort: "DUE_ASC",
+      }),
+    ).toEqual({
+      status: "IN_PROGRESS",
+      priority: "HIGH",
+      due: "OVERDUE",
+      sort: "DUE_ASC",
+    });
+  });
+
+  it("safely ignores unsupported filter values", () => {
+    expect(
+      taskListSearchParamsSchema.parse({
+        status: "UNKNOWN",
+        priority: "URGENT",
+        due: "LATER",
+        sort: "RANDOM",
+      }),
+    ).toEqual({
+      status: undefined,
+      priority: undefined,
+      due: undefined,
+      sort: "UPDATED_DESC",
+    });
   });
 });

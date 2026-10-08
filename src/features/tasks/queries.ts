@@ -1,7 +1,9 @@
 import "server-only";
 
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import type {
+  TaskListFilters,
   TaskPriorityValue,
   TaskStatusValue,
 } from "./schemas";
@@ -17,6 +19,13 @@ export interface TaskItem {
   completedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface TaskOverviewItem extends TaskItem {
+  project: {
+    id: string;
+    title: string;
+  };
 }
 
 const taskSelect = {
@@ -51,5 +60,69 @@ export async function getTask(
   return prisma.task.findFirst({
     where: { id: taskId, projectId, project: { userId } },
     select: taskSelect,
+  });
+}
+
+function getTodayInSeoul(): Date {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  return new Date(`${parts}T00:00:00.000Z`);
+}
+
+function getTaskOrderBy(
+  sort: TaskListFilters["sort"],
+): Prisma.TaskOrderByWithRelationInput[] {
+  if (sort === "DUE_ASC") {
+    return [
+      { dueDate: { sort: "asc", nulls: "last" } },
+      { priority: "desc" },
+    ];
+  }
+
+  if (sort === "PRIORITY_DESC") {
+    return [
+      { priority: "desc" },
+      { dueDate: { sort: "asc", nulls: "last" } },
+    ];
+  }
+
+  return [{ updatedAt: "desc" }];
+}
+
+export async function listTasks(
+  userId: string,
+  filters: TaskListFilters,
+  today = getTodayInSeoul(),
+): Promise<TaskOverviewItem[]> {
+  const dueDate =
+    filters.due === "OVERDUE"
+      ? { lt: today }
+      : filters.due === "TODAY"
+        ? { equals: today }
+        : filters.due === "UPCOMING"
+          ? { gt: today }
+          : filters.due === "NONE"
+            ? null
+            : undefined;
+
+  return prisma.task.findMany({
+    where: {
+      project: { userId },
+      status:
+        filters.status ??
+        (filters.due && filters.due !== "NONE" ? { not: "DONE" } : undefined),
+      priority: filters.priority,
+      dueDate,
+    },
+    orderBy: getTaskOrderBy(filters.sort),
+    select: {
+      ...taskSelect,
+      project: { select: { id: true, title: true } },
+    },
   });
 }
