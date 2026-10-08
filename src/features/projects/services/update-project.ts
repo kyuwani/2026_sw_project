@@ -1,8 +1,8 @@
 import "server-only";
 
 import type { CreateProjectInput } from "@/features/projects/schemas";
+import { resolveTechnologies } from "@/features/technologies/services/resolve-technologies";
 import { prisma } from "@/lib/db/prisma";
-import { resolveTechnologies } from "./resolve-technologies";
 
 export async function updateProject(
   userId: string,

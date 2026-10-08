@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { getDateInTimeZone } from "@/lib/date/time-zone";
 import type {
   TaskListFilters,
   TaskPriorityValue,
@@ -64,14 +65,7 @@ export async function getTask(
 }
 
 function getTodayInSeoul(): Date {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-
-  return new Date(`${parts}T00:00:00.000Z`);
+  return getDateInTimeZone(new Date(), "Asia/Seoul");
 }
 
 function getTaskOrderBy(

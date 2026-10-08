@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { TECHNOLOGY_OPTIONS } from "@/features/technologies/constants";
+
 export const PROJECT_STATUS_VALUES = [
   "PLANNING",
   "IN_PROGRESS",
@@ -7,15 +9,7 @@ export const PROJECT_STATUS_VALUES = [
   "ARCHIVED",
 ] as const;
 
-export const PROJECT_TECHNOLOGY_OPTIONS = [
-  "Next.js",
-  "React",
-  "TypeScript",
-  "Node.js",
-  "PostgreSQL",
-  "Prisma",
-  "Tailwind CSS",
-] as const;
+export const PROJECT_TECHNOLOGY_OPTIONS = TECHNOLOGY_OPTIONS;
 
 const optionalTextSchema = (maxLength: number, message: string) =>
   z.preprocess(

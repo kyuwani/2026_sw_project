@@ -26,6 +26,15 @@ enum TaskPriority {
   HIGH
 }
 
+enum LearningCategory {
+  LANGUAGE
+  FRAMEWORK
+  ALGORITHM
+  DATABASE
+  DEVOPS
+  OTHER
+}
+
 model User {
   id            String        @id @default(uuid()) @db.Uuid
   name          String?
@@ -33,6 +42,7 @@ model User {
   emailVerified DateTime?
   image         String?
   passwordHash  String?
+  timezone      String        @default("Asia/Seoul")
   accounts      Account[]
   sessions      Session[]
   projects      Project[]
@@ -120,6 +130,7 @@ model LearningLog {
   content      String                  @db.Text
   studyMinutes Int
   studiedAt    DateTime                @db.Date
+  category     LearningCategory        @default(OTHER)
   userId       String                  @db.Uuid
   user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   technologies LearningLogTechnology[]

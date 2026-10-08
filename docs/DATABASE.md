@@ -74,6 +74,17 @@ DB enum 값은 UI 표시 문구와 분리한다. 예를 들어 `IN_PROGRESS`는 
 | `MEDIUM` | 보통 |
 | `HIGH` | 높음 |
 
+### LearningCategory
+
+| 값 | 의미 |
+| --- | --- |
+| `LANGUAGE` | 프로그래밍 언어 |
+| `FRAMEWORK` | 프레임워크·라이브러리 |
+| `ALGORITHM` | 알고리즘·자료구조 |
+| `DATABASE` | 데이터베이스 |
+| `DEVOPS` | 인프라·DevOps |
+| `OTHER` | 기타 |
+
 ## 6. 모델
 
 ### 6.1 User
@@ -88,6 +99,7 @@ DB enum 값은 UI 표시 문구와 분리한다. 예를 들어 `IN_PROGRESS`는 
 | `emailVerified` | DateTime? | Adapter 호환 이메일 인증 시각 |
 | `image` | String? | 프로필 이미지 URL |
 | `passwordHash` | String? | 이메일 로그인용 bcrypt 해시, OAuth 사용자는 null |
+| `timezone` | String | IANA 시간대, 기본값 `Asia/Seoul` |
 | `createdAt` | DateTime | 생성 시각, 기본값 `now()` |
 | `updatedAt` | DateTime | Prisma `@updatedAt` |
 
@@ -152,13 +164,14 @@ Project에 속하는 작업 단위다.
 | `content` | Text | 학습 내용 |
 | `studyMinutes` | Int | 학습 시간(분) |
 | `studiedAt` | Date | 학습일 |
+| `category` | LearningCategory | 학습 분류, 기본값 `OTHER` |
 | `userId` | UUID | FK → User |
 | `createdAt` | DateTime | 생성 시각 |
 | `updatedAt` | DateTime | 수정 시각 |
 
 관계: `user`, `technologies`.
 
-`studyMinutes`의 양수 여부와 상한은 Learning Log 입력 스키마에서 검증한다.
+`studyMinutes`는 1분 이상 24시간 이하로 제한하고 미래 학습일은 허용하지 않는다. 날짜 상한은 User의 IANA `timezone`을 기준으로 Learning Log 입력 스키마에서 검증한다.
 
 ### 6.6 Technology
 
@@ -250,6 +263,7 @@ MVP에는 soft delete를 도입하지 않는다. User 삭제는 영향 범위가
 ## 10. Migration과 Seed
 
 - 초기 migration `20260929071200_init`을 `npm run db:migrate -- --name init`으로 생성·적용했다.
+- Day 12 migration `20261008050909_add_learning_category_and_user_timezone`에서 `LearningCategory`, `LearningLog.category`, `User.timezone`을 추가했다.
 - 로컬 PostgreSQL에서 Auth.js 및 도메인 테이블 10개와 `_prisma_migrations` 생성을 확인했다.
 - Production에서는 `prisma migrate dev`를 실행하지 않는다.
 - Day 4에는 seed를 구현하지 않았다.
@@ -260,5 +274,5 @@ MVP에는 soft delete를 도입하지 않는다. User 삭제는 영향 범위가
 - PostgreSQL 호스팅 업체와 pooled/direct URL 전략
 - Production 환경의 PostgreSQL 연결과 GitHub OAuth callback URL을 설정하고 배포 환경에서 인증을 확인
 - User 삭제 전 유예·복구 정책
-- 입력 길이, 날짜 순서, 학습 시간의 서버 검증
+- User 시간대 설정 UI와 유효한 IANA 시간대 선택 목록
 - 실제 쿼리 측정 후 인덱스 조정

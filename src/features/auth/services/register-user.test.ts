@@ -32,6 +32,7 @@ describe("registerUser", () => {
       emailVerified: null,
       image: null,
       passwordHash: "stored-hash",
+      timezone: "Asia/Seoul",
       createdAt: new Date(),
       updatedAt: new Date(),
     });
