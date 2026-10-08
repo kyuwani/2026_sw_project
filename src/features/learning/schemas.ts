@@ -12,6 +12,23 @@ export const LEARNING_CATEGORY_VALUES = [
   "OTHER",
 ] as const;
 
+const firstSearchParamValue = (value: unknown) =>
+  Array.isArray(value) ? value[0] : value;
+
+export const learningLogListSearchParamsSchema = z.object({
+  page: z
+    .preprocess(
+      firstSearchParamValue,
+      z.coerce.number().int().positive().max(10_000).optional(),
+    )
+    .catch(1)
+    .transform((page) => page ?? 1),
+});
+
+export const learningLogIdSchema = z.uuid(
+  "올바르지 않은 학습 기록입니다.",
+);
+
 const durationPartSchema = (max: number, message: string) =>
   z.preprocess(
     (value) =>
@@ -117,6 +134,7 @@ export function createLearningLogInputSchema({
 export type LearningLogInput = z.output<
   ReturnType<typeof createLearningLogInputSchema>
 >;
+export type LearningCategoryValue = (typeof LEARNING_CATEGORY_VALUES)[number];
 export type LearningLogField =
   | "title"
   | "content"

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { createLearningLogInputSchema } from "./schemas";
+import {
+  createLearningLogInputSchema,
+  learningLogIdSchema,
+  learningLogListSearchParamsSchema,
+} from "./schemas";
 
 const now = new Date("2026-10-08T15:30:00.000Z");
 const schema = createLearningLogInputSchema({
@@ -74,5 +78,27 @@ describe("createLearningLogInputSchema", () => {
 
     expect(category.success).toBe(false);
     expect(duplicateTechnology.success).toBe(false);
+  });
+});
+
+describe("learning log route schemas", () => {
+  it("normalizes a valid list page and falls back for invalid input", () => {
+    expect(
+      learningLogListSearchParamsSchema.parse({ page: "3" }),
+    ).toEqual({ page: 3 });
+    expect(
+      learningLogListSearchParamsSchema.parse({ page: ["-1", "2"] }),
+    ).toEqual({ page: 1 });
+    expect(learningLogListSearchParamsSchema.parse({})).toEqual({ page: 1 });
+  });
+
+  it("accepts only UUID learning log IDs", () => {
+    expect(
+      learningLogIdSchema.safeParse("550e8400-e29b-41d4-a716-446655440000")
+        .success,
+    ).toBe(true);
+    expect(learningLogIdSchema.safeParse("not-a-learning-log").success).toBe(
+      false,
+    );
   });
 });
