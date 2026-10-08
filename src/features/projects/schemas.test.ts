@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { createProjectSchema } from "./schemas";
+import {
+  createProjectSchema,
+  projectListSearchParamsSchema,
+} from "./schemas";
 
 const validInput = {
   title: "  DevLog  ",
@@ -98,5 +101,34 @@ describe("createProjectSchema", () => {
 
     expect(duplicate.success).toBe(false);
     expect(unsupported.success).toBe(false);
+  });
+});
+
+describe("projectListSearchParamsSchema", () => {
+  it("normalizes a search query and status filter", () => {
+    expect(
+      projectListSearchParamsSchema.parse({
+        q: "  devlog  ",
+        status: "IN_PROGRESS",
+      }),
+    ).toEqual({ query: "devlog", status: "IN_PROGRESS" });
+  });
+
+  it("uses the first value when a search parameter is repeated", () => {
+    expect(
+      projectListSearchParamsSchema.parse({
+        q: ["first", "second"],
+        status: ["COMPLETED", "ARCHIVED"],
+      }),
+    ).toEqual({ query: "first", status: "COMPLETED" });
+  });
+
+  it("safely ignores unsupported or oversized filter values", () => {
+    expect(
+      projectListSearchParamsSchema.parse({
+        q: "a".repeat(101),
+        status: "UNKNOWN",
+      }),
+    ).toEqual({ query: "", status: undefined });
   });
 });

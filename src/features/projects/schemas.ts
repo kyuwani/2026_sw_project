@@ -104,7 +104,41 @@ export const createProjectSchema = z
     },
   );
 
+const firstSearchParamValue = (value: unknown) =>
+  Array.isArray(value) ? value[0] : value;
+
+const projectSearchQuerySchema = z
+  .preprocess(
+    firstSearchParamValue,
+    z.string().trim().max(100).optional(),
+  )
+  .catch(undefined);
+
+const projectStatusFilterSchema = z
+  .preprocess(
+    (value) => {
+      const firstValue = firstSearchParamValue(value);
+      return firstValue === "ALL" ? undefined : firstValue;
+    },
+    z.enum(PROJECT_STATUS_VALUES).optional(),
+  )
+  .catch(undefined);
+
+export const projectListSearchParamsSchema = z
+  .object({
+    q: projectSearchQuerySchema,
+    status: projectStatusFilterSchema,
+  })
+  .transform(({ q, status }) => ({
+    query: q ?? "",
+    status,
+  }));
+
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
+export type ProjectListFilters = z.infer<
+  typeof projectListSearchParamsSchema
+>;
+export type ProjectStatusValue = (typeof PROJECT_STATUS_VALUES)[number];
 export type ProjectField =
   | "title"
   | "description"
