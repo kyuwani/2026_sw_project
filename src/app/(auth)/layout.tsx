@@ -13,7 +13,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       <div className="w-full max-w-md">
         <Link
           className="mb-8 inline-flex items-center gap-3 rounded-lg"
-          href="/"
+          href="/login"
         >
           <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-white">
             <Braces aria-hidden="true" className="size-5" />

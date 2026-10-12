@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarDays, Menu, Plus } from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { RefObject } from "react";
 
@@ -10,6 +11,10 @@ interface TopNavigationProps {
   onOpenMenu: () => void;
   menuButtonRef: RefObject<HTMLButtonElement | null>;
   menuOpen: boolean;
+  currentDate: {
+    dateTime: string;
+    label: string;
+  };
 }
 
 function getPageTitle(pathname: string): string {
@@ -24,6 +29,7 @@ export function TopNavigation({
   onOpenMenu,
   menuButtonRef,
   menuOpen,
+  currentDate,
 }: TopNavigationProps) {
   const pathname = usePathname();
   const title = getPageTitle(pathname);
@@ -50,17 +56,17 @@ export function TopNavigation({
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="hidden items-center gap-2 text-sm text-muted md:flex">
           <CalendarDays aria-hidden="true" className="size-4" />
-          <time dateTime="2026-09-21">2026년 9월 21일</time>
+          <time dateTime={currentDate.dateTime}>{currentDate.label}</time>
         </div>
         <span className="hidden h-6 w-px bg-border sm:block" aria-hidden="true" />
-        <button
-          type="button"
+        <Link
+          href="/learning/new"
           className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover sm:px-4"
         >
           <Plus aria-hidden="true" className="size-4" />
           <span className="hidden sm:inline">새 기록</span>
           <span className="sr-only sm:hidden">새 기록</span>
-        </button>
+        </Link>
       </div>
     </header>
   );

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getProfile } from "./queries";
+import { getAppShellUser, getProfile } from "./queries";
 
 const prismaMocks = vi.hoisted(() => ({ userFindUnique: vi.fn() }));
 
@@ -60,5 +60,43 @@ describe("getProfile", () => {
 
     expect(profile?.imageUrl).toBeNull();
     expect(profile?.githubConnected).toBe(false);
+  });
+});
+
+describe("getAppShellUser", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns only the user data required by the app shell", async () => {
+    prismaMocks.userFindUnique.mockResolvedValue({
+      name: "개발자",
+      email: "developer@example.com",
+      timezone: "Asia/Seoul",
+    });
+
+    await expect(getAppShellUser("user-id")).resolves.toEqual({
+      name: "개발자",
+      email: "developer@example.com",
+      timeZone: "Asia/Seoul",
+    });
+    expect(prismaMocks.userFindUnique).toHaveBeenCalledWith({
+      where: { id: "user-id" },
+      select: { name: true, email: true, timezone: true },
+    });
+  });
+
+  it("uses UTC when a stored time zone is invalid", async () => {
+    prismaMocks.userFindUnique.mockResolvedValue({
+      name: null,
+      email: null,
+      timezone: "Invalid/Timezone",
+    });
+
+    await expect(getAppShellUser("user-id")).resolves.toEqual({
+      name: null,
+      email: null,
+      timeZone: "UTC",
+    });
   });
 });

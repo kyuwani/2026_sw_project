@@ -222,6 +222,8 @@ Repository 연결 Server Action은 세션 사용자, 프로젝트 소유권과 G
 
 Profile 조회는 User와 GitHub Account 연결 여부, 순서가 있는 UserTechnology를 최소 DTO로 변환한다. Profile 수정 Action은 세션 사용자만 갱신하고 IANA 시간대와 GitHub URL을 Zod로 검증하며, User 기본 정보와 주 사용 기술 교체를 transaction으로 처리한다. 이름 변경 후 JWT 세션의 표시 이름도 갱신하고 시간대에 의존하는 Dashboard, Analytics와 Learning 경로를 재검증한다. OAuth 프로필 이미지는 허용한 GitHub avatar host만 렌더링한다.
 
+인증된 앱 셸은 User에서 이름, 이메일과 시간대만 별도 DTO로 조회한다. 서버 레이아웃에서 검증된 시간대를 기준으로 오늘 날짜를 계산해 Client Component에 직렬화 가능한 문자열로 전달하며, 잘못 저장된 시간대에는 UTC를 안전한 기본값으로 사용한다.
+
 ## 8. 인증 구조
 
 ### 8.1 인증 방식

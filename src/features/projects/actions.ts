@@ -43,8 +43,10 @@ export async function createProjectAction(
     return { fieldErrors: parsed.error.flatten().fieldErrors };
   }
 
+  let project: Awaited<ReturnType<typeof createProject>>;
+
   try {
-    await createProject(session.user.id, parsed.data);
+    project = await createProject(session.user.id, parsed.data);
   } catch {
     return {
       message: "프로젝트를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
@@ -52,7 +54,7 @@ export async function createProjectAction(
   }
 
   revalidatePath("/projects");
-  redirect("/projects/new?created=1");
+  redirect(`/projects/${project.id}?created=1`);
 }
 
 export async function updateProjectAction(

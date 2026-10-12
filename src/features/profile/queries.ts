@@ -1,6 +1,13 @@
 import "server-only";
 
 import { prisma } from "@/lib/db/prisma";
+import { isValidTimeZone } from "@/lib/date/time-zone";
+
+export interface AppShellUserDto {
+  name: string | null;
+  email: string | null;
+  timeZone: string;
+}
 
 export interface ProfileDto {
   id: string;
@@ -26,6 +33,23 @@ function getAllowedProfileImageUrl(value: string | null): string | null {
   } catch {
     return null;
   }
+}
+
+export async function getAppShellUser(
+  userId: string,
+): Promise<AppShellUserDto | null> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true, email: true, timezone: true },
+  });
+
+  if (!user) return null;
+
+  return {
+    name: user.name,
+    email: user.email,
+    timeZone: isValidTimeZone(user.timezone) ? user.timezone : "UTC",
+  };
 }
 
 export async function getProfile(userId: string): Promise<ProfileDto | null> {

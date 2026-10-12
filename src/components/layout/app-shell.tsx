@@ -11,9 +11,13 @@ interface AppShellProps {
     name: string | null;
     email: string | null;
   };
+  currentDate: {
+    dateTime: string;
+    label: string;
+  };
 }
 
-export function AppShell({ children, user }: AppShellProps) {
+export function AppShell({ children, currentDate, user }: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -109,6 +113,7 @@ export function AppShell({ children, user }: AppShellProps) {
 
       <div className="min-h-screen lg:pl-64">
         <TopNavigation
+          currentDate={currentDate}
           onOpenMenu={() => setMobileMenuOpen(true)}
           menuButtonRef={menuButtonRef}
           menuOpen={mobileMenuOpen}

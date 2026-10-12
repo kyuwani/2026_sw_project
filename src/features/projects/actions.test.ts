@@ -65,7 +65,7 @@ describe("createProjectAction", () => {
       }),
     );
     expect(revalidatePath).toHaveBeenCalledWith("/projects");
-    expect(redirect).toHaveBeenCalledWith("/projects/new?created=1");
+    expect(redirect).toHaveBeenCalledWith("/projects/project-id?created=1");
   });
 
   it("rejects invalid form values before writing", async () => {

@@ -50,6 +50,7 @@ const commitDateFormatter = new Intl.DateTimeFormat("ko-KR", {
 interface ProjectDetailPageProps {
   params: Promise<{ projectId: string }>;
   searchParams: Promise<{
+    created?: string | string[];
     updated?: string | string[];
     taskCreated?: string | string[];
     taskUpdated?: string | string[];
@@ -58,6 +59,56 @@ interface ProjectDetailPageProps {
 }
 
 const successSearchParamSchema = z.literal("1");
+
+interface ProjectFeedback {
+  title: string;
+  description: string;
+}
+
+function getProjectFeedback(searchParams: {
+  created?: string | string[];
+  updated?: string | string[];
+  taskCreated?: string | string[];
+  taskUpdated?: string | string[];
+  taskDeleted?: string | string[];
+}): ProjectFeedback | null {
+  if (successSearchParamSchema.safeParse(searchParams.created).success) {
+    return {
+      title: "프로젝트를 만들었습니다.",
+      description: "이어서 첫 Task를 추가하거나 프로젝트 정보를 확인해 보세요.",
+    };
+  }
+
+  if (successSearchParamSchema.safeParse(searchParams.updated).success) {
+    return {
+      title: "프로젝트를 수정했습니다.",
+      description: "변경한 정보와 기술 스택이 반영되었습니다.",
+    };
+  }
+
+  if (successSearchParamSchema.safeParse(searchParams.taskCreated).success) {
+    return {
+      title: "Task를 추가했습니다.",
+      description: "프로젝트 진행 현황에 새 Task가 반영되었습니다.",
+    };
+  }
+
+  if (successSearchParamSchema.safeParse(searchParams.taskUpdated).success) {
+    return {
+      title: "Task를 수정했습니다.",
+      description: "변경한 상태와 우선순위가 반영되었습니다.",
+    };
+  }
+
+  if (successSearchParamSchema.safeParse(searchParams.taskDeleted).success) {
+    return {
+      title: "Task를 삭제했습니다.",
+      description: "프로젝트 진행 현황이 다시 계산되었습니다.",
+    };
+  }
+
+  return null;
+}
 
 function formatDate(date: Date | null): string {
   return date ? dateFormatter.format(date) : "미정";
@@ -93,29 +144,7 @@ export default async function ProjectDetailPage({
     getProjectGitHubActivity(session.user.id, parsedProjectId.data),
   ]);
 
-  const rawSearchParams = await searchParams;
-  const feedback = successSearchParamSchema.safeParse(rawSearchParams.updated)
-    .success
-    ? {
-        title: "프로젝트를 수정했습니다.",
-        description: "변경한 정보와 기술 스택이 반영되었습니다.",
-      }
-    : successSearchParamSchema.safeParse(rawSearchParams.taskCreated).success
-      ? {
-          title: "Task를 추가했습니다.",
-          description: "프로젝트 진행 현황에 새 Task가 반영되었습니다.",
-        }
-      : successSearchParamSchema.safeParse(rawSearchParams.taskUpdated).success
-        ? {
-            title: "Task를 수정했습니다.",
-            description: "변경한 상태와 우선순위가 반영되었습니다.",
-          }
-        : successSearchParamSchema.safeParse(rawSearchParams.taskDeleted).success
-          ? {
-              title: "Task를 삭제했습니다.",
-              description: "프로젝트 진행 현황이 다시 계산되었습니다.",
-            }
-          : null;
+  const feedback = getProjectFeedback(await searchParams);
 
   return (
     <div className="space-y-8">
