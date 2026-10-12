@@ -258,7 +258,7 @@ MVP에는 soft delete를 도입하지 않는다. User 삭제는 영향 범위가
 
 `userId`, `projectId`, `status`, `studiedAt`, `dueDate`를 각각 단독으로 모두 인덱싱하지 않는다. 사용자 소유권 범위를 포함한 실제 조회 조합을 우선한다.
 
-`completedAt`은 향후 완료 시점 조회에 사용하지만 아직 실제 Analytics 쿼리가 없으므로 Day 5에는 별도 인덱스를 추가하지 않는다. 쿼리 형태와 실행 계획을 확인한 뒤 Project 소유권 경로를 포함한 인덱스를 결정한다.
+Day 17 Analytics의 Task 완료율은 완료 시점이 아닌 현재 `status`를 사용하므로 기존 `Task(projectId, status)` 인덱스와 사용자 소유 Project 조회를 활용한다. 기간별 Task 완료 추이를 구현하기 전까지 `completedAt` 단독 인덱스는 추가하지 않는다.
 
 ## 10. Migration과 Seed
 
