@@ -63,7 +63,10 @@ describe("getGitHubRepositories", () => {
       rateLimit: { remaining: 10, resetAt: null },
       truncated: false,
     });
-    expect(JSON.stringify(result)).not.toContain("server-token");
+    const serializedResult = JSON.stringify(result);
+    expect(serializedResult).not.toContain("server-token");
+    expect(serializedResult).not.toContain("access_token");
+    expect(serializedResult).not.toContain("refresh_token");
   });
 
   it("maps rate limits and upstream errors to safe states", async () => {

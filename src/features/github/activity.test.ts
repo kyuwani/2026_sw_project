@@ -74,7 +74,10 @@ describe("getProjectGitHubActivity", () => {
       repository: expect.objectContaining({ fullName: "octocat/devlog" }),
       commits: { status: "AVAILABLE", commits: [] },
     });
-    expect(JSON.stringify(result)).not.toContain("server-token");
+    const serializedResult = JSON.stringify(result);
+    expect(serializedResult).not.toContain("server-token");
+    expect(serializedResult).not.toContain("access_token");
+    expect(serializedResult).not.toContain("refresh_token");
   });
 
   it("keeps cached repository data when GitHub is unavailable", async () => {

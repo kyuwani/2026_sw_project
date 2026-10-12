@@ -61,7 +61,10 @@ describe("task actions", () => {
     });
     vi.mocked(createTask).mockResolvedValue({ id: taskId });
 
-    await createTaskAction(projectId, {}, createValidFormData());
+    const formData = createValidFormData();
+    formData.set("userId", "forged-user-id");
+
+    await createTaskAction(projectId, {}, formData);
 
     expect(createTask).toHaveBeenCalledWith(
       "user-id",
@@ -85,6 +88,52 @@ describe("task actions", () => {
       updateTaskAction(projectId, taskId, {}, createValidFormData()),
     ).resolves.toEqual({
       message: "프로젝트를 찾을 수 없거나 Task 수정 권한이 없습니다.",
+    });
+    expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed resource IDs before writing", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "user-id" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+
+    await expect(
+      updateTaskAction("not-a-uuid", taskId, {}, createValidFormData()),
+    ).resolves.toEqual({
+      message: "프로젝트를 찾을 수 없거나 Task 수정 권한이 없습니다.",
+    });
+    await expect(
+      deleteTaskAction(projectId, "not-a-uuid", {}, new FormData()),
+    ).resolves.toEqual({
+      message: "프로젝트를 찾을 수 없거나 Task 삭제 권한이 없습니다.",
+    });
+    await expect(
+      setTaskCompletionAction(
+        projectId,
+        "not-a-uuid",
+        "DONE",
+        {},
+        new FormData(),
+      ),
+    ).resolves.toEqual({ message: "Task 상태를 변경할 수 없습니다." });
+
+    expect(updateTask).not.toHaveBeenCalled();
+    expect(deleteTask).not.toHaveBeenCalled();
+    expect(setTaskCompletion).not.toHaveBeenCalled();
+  });
+
+  it("returns a safe error when Task deletion ownership fails", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "other-user" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+    vi.mocked(deleteTask).mockResolvedValue(false);
+
+    await expect(
+      deleteTaskAction(projectId, taskId, {}, new FormData()),
+    ).resolves.toEqual({
+      message: "프로젝트를 찾을 수 없거나 Task 삭제 권한이 없습니다.",
     });
     expect(redirect).not.toHaveBeenCalled();
   });

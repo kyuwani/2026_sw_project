@@ -15,7 +15,7 @@ const serverEnvSchema = z.object({
 
 const authEnvSchema = z
   .object({
-    AUTH_SECRET: z.string().min(32, "AUTH_SECRET은 32자 이상이어야 합니다.").optional(),
+    AUTH_SECRET: z.string().min(32, "AUTH_SECRET은 32자 이상이어야 합니다."),
     AUTH_GITHUB_ID: z.string().min(1).optional(),
     AUTH_GITHUB_SECRET: z.string().min(1).optional(),
   })
@@ -44,7 +44,7 @@ export function getServerEnv(): ServerEnv {
 
 export function getAuthEnv(): AuthEnv {
   const result = authEnvSchema.safeParse({
-    AUTH_SECRET: process.env.AUTH_SECRET || undefined,
+    AUTH_SECRET: process.env.AUTH_SECRET,
     AUTH_GITHUB_ID: process.env.AUTH_GITHUB_ID || undefined,
     AUTH_GITHUB_SECRET: process.env.AUTH_GITHUB_SECRET || undefined,
   });

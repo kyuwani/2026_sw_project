@@ -251,6 +251,18 @@ Profile 조회는 User와 GitHub Account 연결 여부, 순서가 있는 UserTec
 - 사용자가 보낸 `userId`는 신뢰하지 않고 세션의 사용자 ID를 사용한다.
 - OAuth access token은 서버에서만 접근하고 클라이언트 props나 로그에 포함하지 않는다.
 
+### 8.4 인증 요청 보호
+
+- 로그인·회원가입 Server Action은 공개 HTTP endpoint와 동일하게 취급하고, Zod 검증 후 Auth.js 또는 도메인 서비스만 호출한다.
+- Next.js 기본 same-origin 검사를 유지하며 신뢰할 수 있는 reverse proxy가 확정되기 전에는 `serverActions.allowedOrigins`를 추가하지 않는다.
+- 로그인 실패는 이메일 존재 여부나 내부 인증 오류를 구분하지 않는 동일한 메시지로 반환한다.
+- 비밀번호는 bcrypt cost 12로 해시하며 평문을 저장하거나 로그에 기록하지 않는다.
+- `AUTH_SECRET`은 32자 이상 필수값으로 검증하고 누락 또는 짧은 값에서는 서버를 시작하지 않는다.
+- OAuth access token은 `server-only` 모듈에서 필요한 필드만 조회하고 안전한 Repository·Commit DTO로 변환한 뒤 반환한다.
+- 공개 배포 전 `/login`, `/signup`, `/api/auth/*`에 배포 계층의 IP 기반 rate limit을 먼저 관찰 모드로 적용한 뒤 429 차단으로 전환한다. 계정 단위 제한이 필요하면 다중 인스턴스에서 공유되는 저장소를 사용하며 프로세스 메모리 제한기는 사용하지 않는다.
+
+참고: [Next.js Server Action 설정](https://nextjs.org/docs/app/api-reference/config/next-config-js/serverActions), [Auth.js Credentials 보안 책임](https://authjs.dev/getting-started/providers/credentials), [Vercel WAF Rate Limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)
+
 ## 9. API와 Server Action 전략
 
 ### 9.1 Server Action을 사용한다

@@ -69,7 +69,10 @@ describe("learning log actions", () => {
     vi.mocked(getUserTimeZone).mockResolvedValue("Asia/Seoul");
     vi.mocked(createLearningLog).mockResolvedValue({ id: "learning-log-id" });
 
-    await createLearningLogAction({}, createValidFormData());
+    const formData = createValidFormData();
+    formData.set("userId", "forged-user-id");
+
+    await createLearningLogAction({}, formData);
 
     expect(getUserTimeZone).toHaveBeenCalledWith("user-id");
     expect(createLearningLog).toHaveBeenCalledWith(
@@ -148,6 +151,28 @@ describe("learning log actions", () => {
       message: "학습 기록을 찾을 수 없거나 수정 권한이 없습니다.",
     });
     expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed learning log IDs before querying or writing", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "user-id" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+
+    await expect(
+      updateLearningLogAction("not-a-uuid", {}, createValidFormData()),
+    ).resolves.toEqual({
+      message: "학습 기록을 찾을 수 없거나 수정 권한이 없습니다.",
+    });
+    await expect(
+      deleteLearningLogAction("not-a-uuid", {}, new FormData()),
+    ).resolves.toEqual({
+      message: "학습 기록을 찾을 수 없거나 삭제 권한이 없습니다.",
+    });
+
+    expect(getUserTimeZone).not.toHaveBeenCalled();
+    expect(updateLearningLog).not.toHaveBeenCalled();
+    expect(deleteLearningLog).not.toHaveBeenCalled();
   });
 
   it("deletes only with the authenticated user's ID", async () => {

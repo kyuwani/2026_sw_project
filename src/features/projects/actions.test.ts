@@ -54,7 +54,10 @@ describe("createProjectAction", () => {
     });
     vi.mocked(createProject).mockResolvedValue({ id: "project-id" });
 
-    await createProjectAction({}, createValidFormData());
+    const formData = createValidFormData();
+    formData.set("userId", "forged-user-id");
+
+    await createProjectAction({}, formData);
 
     expect(createProject).toHaveBeenCalledWith(
       "user-id",
@@ -125,6 +128,21 @@ describe("updateProjectAction", () => {
     });
     expect(redirect).not.toHaveBeenCalled();
   });
+
+  it("rejects a malformed project ID before updating", async () => {
+    const { updateProjectAction } = await import("./actions");
+    authMock.mockResolvedValue({
+      user: { id: "user-id" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+
+    await expect(
+      updateProjectAction("not-a-uuid", {}, createValidFormData()),
+    ).resolves.toEqual({
+      message: "프로젝트를 찾을 수 없거나 수정 권한이 없습니다.",
+    });
+    expect(updateProject).not.toHaveBeenCalled();
+  });
 });
 
 describe("deleteProjectAction", () => {
@@ -161,5 +179,20 @@ describe("deleteProjectAction", () => {
       message: "프로젝트를 찾을 수 없거나 삭제 권한이 없습니다.",
     });
     expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("rejects a malformed project ID before deleting", async () => {
+    const { deleteProjectAction } = await import("./actions");
+    authMock.mockResolvedValue({
+      user: { id: "user-id" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+
+    await expect(
+      deleteProjectAction("not-a-uuid", {}, new FormData()),
+    ).resolves.toEqual({
+      message: "프로젝트를 찾을 수 없거나 삭제 권한이 없습니다.",
+    });
+    expect(deleteProject).not.toHaveBeenCalled();
   });
 });
