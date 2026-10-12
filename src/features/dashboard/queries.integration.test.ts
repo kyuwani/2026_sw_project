@@ -153,6 +153,7 @@ describeWithDatabase("dashboard queries database integration", () => {
     );
 
     expect(dashboard?.summary).toEqual({
+      totalProjects: 2,
       inProgressProjects: 1,
       completedProjects: 1,
       completedTasks: 2,
@@ -173,6 +174,12 @@ describeWithDatabase("dashboard queries database integration", () => {
       "내일 마감 Task",
     ]);
     expect(dashboard?.recentLearningLogs).toHaveLength(3);
+    expect(dashboard?.recentActivity).toHaveLength(5);
+    expect(
+      dashboard?.recentActivity.some(
+        (activity) => activity.title === "다른 사용자 프로젝트",
+      ),
+    ).toBe(false);
     expect(
       dashboard?.recentLearningLogs.some(
         ({ title }) => title === "다른 사용자 학습",

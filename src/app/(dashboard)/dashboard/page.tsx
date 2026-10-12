@@ -5,7 +5,9 @@ import {
   Clock3,
   Flame,
   FolderKanban,
+  History,
   Plus,
+  Rocket,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -21,12 +23,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Progress } from "@/components/ui/progress";
 import { StatCard } from "@/features/dashboard/components/stat-card";
 import { WeeklyStudyChart } from "@/features/dashboard/components/weekly-study-chart";
+import { isFirstDashboardVisit } from "@/features/dashboard/presentation";
 import {
   getDashboardData,
+  type DashboardActivity,
   type DashboardTask,
 } from "@/features/dashboard/queries";
 import {
@@ -55,6 +60,26 @@ function formatDashboardDate(date: Date, timeZone: string): string {
 
 function formatDueDate(dueDate: Date | null): string {
   return dueDate ? calendarDateFormatter.format(dueDate) : "기한 미정";
+}
+
+function formatActivityDate(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone,
+  }).format(date);
+}
+
+function getActivityDescription(activity: DashboardActivity): string {
+  if (activity.type === "PROJECT_UPDATED") {
+    return "프로젝트를 업데이트했습니다.";
+  }
+  if (activity.type === "TASK_COMPLETED") {
+    return `${activity.projectTitle}의 Task를 완료했습니다.`;
+  }
+  return "학습 기록을 작성했습니다.";
 }
 
 function formatTaskDueLabel(task: DashboardTask, today: Date): string {
@@ -92,6 +117,49 @@ export default async function DashboardPage() {
   }
 
   const displayName = session.user.name?.trim() || "개발자";
+  const pageHeader = (
+    <PageHeader
+      eyebrow={formatDashboardDate(now, dashboard.timeZone)}
+      title={`안녕하세요, ${displayName}님`}
+      description="오늘의 개발 흐름을 확인하고, 가장 중요한 작업부터 이어가세요."
+      action={
+        <ButtonLink href="/projects/new">
+          <Plus aria-hidden="true" className="size-4" />
+          새 프로젝트
+        </ButtonLink>
+      }
+    />
+  );
+
+  if (isFirstDashboardVisit(dashboard)) {
+    return (
+      <div className="space-y-8">
+        {pageHeader}
+        <EmptyState
+          icon={Rocket}
+          title="DevLog를 시작해 보세요"
+          description="첫 프로젝트를 만들거나 오늘 배운 내용을 기록하면 진행 상황과 학습 흐름이 Dashboard에 쌓입니다."
+          action={
+            <div className="flex w-full flex-col gap-3 sm:flex-row">
+              <ButtonLink className="w-full sm:w-auto" href="/projects/new">
+                <Plus aria-hidden="true" className="size-4" />
+                첫 프로젝트 만들기
+              </ButtonLink>
+              <ButtonLink
+                className="w-full sm:w-auto"
+                href="/learning/new"
+                variant="outline"
+              >
+                <BookOpenCheck aria-hidden="true" className="size-4" />
+                오늘 학습 기록하기
+              </ButtonLink>
+            </div>
+          }
+        />
+      </div>
+    );
+  }
+
   const weeklyStudy = dashboard.weeklyStudy.map((item) => ({
     day: dayFormatter.format(item.date).replace("요일", ""),
     minutes: item.minutes,
@@ -99,17 +167,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        eyebrow={formatDashboardDate(now, dashboard.timeZone)}
-        title={`안녕하세요, ${displayName}님`}
-        description="오늘의 개발 흐름을 확인하고, 가장 중요한 작업부터 이어가세요."
-        action={
-          <ButtonLink href="/projects/new">
-            <Plus aria-hidden="true" className="size-4" />
-            새 프로젝트
-          </ButtonLink>
-        }
-      />
+      {pageHeader}
 
       <section
         aria-label="개발 현황 요약"
@@ -147,7 +205,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.75fr)]">
         <Card>
-          <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
+          <CardHeader className="flex flex-col items-start gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>프로젝트 진행률</CardTitle>
               <CardDescription>현재 진행 중인 프로젝트를 확인하세요.</CardDescription>
@@ -216,7 +274,7 @@ export default async function DashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
             <div>
               <CardTitle>이번 주 학습</CardTitle>
               <CardDescription>일별 학습 시간</CardDescription>
@@ -236,7 +294,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="overflow-hidden">
-          <CardHeader className="flex-row items-center justify-between space-y-0 border-b border-border py-4">
+          <CardHeader className="flex flex-col items-start gap-3 space-y-0 border-b border-border py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>마감 임박 Task</CardTitle>
               <CardDescription>마감일이 가까운 미완료 작업</CardDescription>
@@ -271,7 +329,7 @@ export default async function DashboardPage() {
                       {task.projectTitle}
                     </p>
                   </div>
-                  <div className="text-right">
+                  <div className="shrink-0 text-right">
                     <Badge variant={priority.variant}>{priority.label}</Badge>
                     <p className="mt-1.5 text-xs font-medium text-muted">
                       {formatTaskDueLabel(task, dashboard.today)}
@@ -289,7 +347,7 @@ export default async function DashboardPage() {
         </Card>
 
         <Card className="overflow-hidden">
-          <CardHeader className="flex-row items-center justify-between space-y-0 border-b border-border py-4">
+          <CardHeader className="flex flex-col items-start gap-3 space-y-0 border-b border-border py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>최근 학습 기록</CardTitle>
               <CardDescription>최근 학습일 기준 기록</CardDescription>
@@ -335,6 +393,54 @@ export default async function DashboardPage() {
           </ul>
         </Card>
       </div>
+
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b border-border py-4">
+          <div className="flex items-center gap-2">
+            <History aria-hidden="true" className="size-4 text-primary" />
+            <CardTitle>최근 활동</CardTitle>
+          </div>
+          <CardDescription>프로젝트와 학습에서 최근 변경된 내용</CardDescription>
+        </CardHeader>
+        <ul className="divide-y divide-border">
+          {dashboard.recentActivity.map((activity) => {
+            const ActivityIcon =
+              activity.type === "PROJECT_UPDATED"
+                ? FolderKanban
+                : activity.type === "TASK_COMPLETED"
+                  ? CheckCircle2
+                  : BookOpenCheck;
+
+            return (
+              <li
+                key={`${activity.type}-${activity.id}`}
+                className="flex min-w-0 items-start gap-3 px-5 py-4 sm:items-center sm:px-6"
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
+                  <ActivityIcon aria-hidden="true" className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <Link
+                    className="block truncate text-sm font-semibold text-foreground hover:text-primary"
+                    href={activity.href}
+                  >
+                    {activity.title}
+                  </Link>
+                  <p className="mt-1 text-xs leading-5 text-muted">
+                    {getActivityDescription(activity)}
+                  </p>
+                </div>
+                <time
+                  className="shrink-0 text-xs font-medium text-muted"
+                  dateTime={activity.occurredAt.toISOString()}
+                >
+                  {formatActivityDate(activity.occurredAt, dashboard.timeZone)}
+                </time>
+              </li>
+            );
+          })}
+        </ul>
+      </Card>
     </div>
   );
 }

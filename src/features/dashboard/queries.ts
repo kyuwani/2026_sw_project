@@ -9,6 +9,7 @@ import { calculateLearningStreak } from "./streak";
 
 const DASHBOARD_PROJECT_LIMIT = 5;
 const DASHBOARD_ITEM_LIMIT = 3;
+const DASHBOARD_ACTIVITY_LIMIT = 5;
 
 function addUtcDays(date: Date, days: number): Date {
   const nextDate = new Date(date);
@@ -23,6 +24,7 @@ function getWeekStart(today: Date): Date {
 }
 
 export interface DashboardSummary {
+  totalProjects: number;
   inProgressProjects: number;
   completedProjects: number;
   completedTasks: number;
@@ -57,7 +59,32 @@ export interface DashboardLearningLog {
   category: LearningCategoryValue;
   studyMinutes: number;
   studiedAt: Date;
+  createdAt: Date;
 }
+
+export type DashboardActivity =
+  | {
+      type: "PROJECT_UPDATED";
+      id: string;
+      title: string;
+      occurredAt: Date;
+      href: string;
+    }
+  | {
+      type: "TASK_COMPLETED";
+      id: string;
+      title: string;
+      projectTitle: string;
+      occurredAt: Date;
+      href: string;
+    }
+  | {
+      type: "LEARNING_LOGGED";
+      id: string;
+      title: string;
+      occurredAt: Date;
+      href: string;
+    };
 
 export interface WeeklyStudyItem {
   date: Date;
@@ -71,6 +98,7 @@ export interface DashboardData {
   projects: DashboardProject[];
   upcomingTasks: DashboardTask[];
   recentLearningLogs: DashboardLearningLog[];
+  recentActivity: DashboardActivity[];
   weeklyStudy: WeeklyStudyItem[];
 }
 
@@ -92,6 +120,7 @@ export async function getDashboardData(
   const weekEnd = addUtcDays(weekStart, 6);
 
   const [
+    totalProjects,
     inProgressProjects,
     completedProjects,
     completedTasks,
@@ -100,7 +129,10 @@ export async function getDashboardData(
     projectRecords,
     taskRecords,
     recentLearningLogs,
+    recentProjectActivities,
+    recentCompletedTasks,
   ] = await Promise.all([
+    prisma.project.count({ where: { userId } }),
     prisma.project.count({ where: { userId, status: "IN_PROGRESS" } }),
     prisma.project.count({ where: { userId, status: "COMPLETED" } }),
     prisma.task.count({
@@ -161,6 +193,25 @@ export async function getDashboardData(
         category: true,
         studyMinutes: true,
         studiedAt: true,
+        createdAt: true,
+      },
+    }),
+    prisma.project.findMany({
+      where: { userId },
+      orderBy: { updatedAt: "desc" },
+      take: DASHBOARD_ITEM_LIMIT,
+      select: { id: true, title: true, updatedAt: true },
+    }),
+    prisma.task.findMany({
+      where: { project: { userId }, completedAt: { not: null } },
+      orderBy: { completedAt: "desc" },
+      take: DASHBOARD_ITEM_LIMIT,
+      select: {
+        id: true,
+        projectId: true,
+        title: true,
+        completedAt: true,
+        project: { select: { title: true } },
       },
     }),
   ]);
@@ -186,6 +237,7 @@ export async function getDashboardData(
     timeZone: user.timezone,
     today,
     summary: {
+      totalProjects,
       inProgressProjects,
       completedProjects,
       completedTasks,
@@ -239,6 +291,45 @@ export async function getDashboardData(
         : [],
     ),
     recentLearningLogs,
+    recentActivity: [
+      ...recentProjectActivities.map(
+        (project): DashboardActivity => ({
+          type: "PROJECT_UPDATED",
+          id: project.id,
+          title: project.title,
+          occurredAt: project.updatedAt,
+          href: `/projects/${project.id}`,
+        }),
+      ),
+      ...recentCompletedTasks.flatMap((task): DashboardActivity[] =>
+        task.completedAt
+          ? [
+              {
+                type: "TASK_COMPLETED",
+                id: task.id,
+                title: task.title,
+                projectTitle: task.project.title,
+                occurredAt: task.completedAt,
+                href: `/projects/${task.projectId}`,
+              },
+            ]
+          : [],
+      ),
+      ...recentLearningLogs.map(
+        (learningLog): DashboardActivity => ({
+          type: "LEARNING_LOGGED",
+          id: learningLog.id,
+          title: learningLog.title,
+          occurredAt: learningLog.createdAt,
+          href: `/learning/${learningLog.id}`,
+        }),
+      ),
+    ]
+      .sort(
+        (left, right) =>
+          right.occurredAt.getTime() - left.occurredAt.getTime(),
+      )
+      .slice(0, DASHBOARD_ACTIVITY_LIMIT),
     weeklyStudy,
   };
 }

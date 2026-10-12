@@ -45,6 +45,7 @@ describe("getDashboardData", () => {
   it("returns user-scoped dashboard aggregates and DTOs", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(userRecord);
     vi.mocked(prisma.project.count)
+      .mockResolvedValueOnce(3)
       .mockResolvedValueOnce(2)
       .mockResolvedValueOnce(1);
     vi.mocked(prisma.task.count).mockResolvedValue(5);
@@ -100,8 +101,23 @@ describe("getDashboardData", () => {
         updatedAt: new Date("2026-10-12T00:00:00.000Z"),
         project: { title: "DevLog" },
       };
-    vi.mocked(prisma.project.findMany).mockResolvedValue([projectRecord]);
-    vi.mocked(prisma.task.findMany).mockResolvedValue([taskRecord]);
+    vi.mocked(prisma.project.findMany)
+      .mockResolvedValueOnce([projectRecord])
+      .mockResolvedValueOnce([
+        {
+          ...projectRecord,
+        },
+      ]);
+    vi.mocked(prisma.task.findMany)
+      .mockResolvedValueOnce([taskRecord])
+      .mockResolvedValueOnce([
+        {
+          ...taskRecord,
+          id: "completed-task-id",
+          title: "집계 구현 완료",
+          completedAt: new Date("2026-10-11T12:00:00.000Z"),
+        },
+      ]);
 
     const result = await getDashboardData(
       "user-id",
@@ -109,6 +125,7 @@ describe("getDashboardData", () => {
     );
 
     expect(result?.summary).toEqual({
+      totalProjects: 3,
       inProgressProjects: 2,
       completedProjects: 1,
       completedTasks: 5,
@@ -130,9 +147,17 @@ describe("getDashboardData", () => {
       }),
     );
     expect(result?.recentLearningLogs).toHaveLength(1);
+    expect(result?.recentActivity.map(({ type }) => type)).toEqual([
+      "LEARNING_LOGGED",
+      "PROJECT_UPDATED",
+      "TASK_COMPLETED",
+    ]);
     expect(result?.weeklyStudy).toHaveLength(7);
 
     expect(prisma.project.count).toHaveBeenNthCalledWith(1, {
+      where: { userId: "user-id" },
+    });
+    expect(prisma.project.count).toHaveBeenNthCalledWith(2, {
       where: { userId: "user-id", status: "IN_PROGRESS" },
     });
     expect(prisma.task.findMany).toHaveBeenCalledWith(
@@ -159,5 +184,7 @@ describe("getDashboardData", () => {
     expect(prisma.project.count).not.toHaveBeenCalled();
     expect(prisma.task.count).not.toHaveBeenCalled();
     expect(prisma.learningLog.findMany).not.toHaveBeenCalled();
+    expect(prisma.project.findMany).not.toHaveBeenCalled();
+    expect(prisma.task.findMany).not.toHaveBeenCalled();
   });
 });

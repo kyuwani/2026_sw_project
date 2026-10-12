@@ -1,3 +1,5 @@
+import { getStudyBarHeight } from "../presentation";
+
 interface StudyDay {
   day: string;
   minutes: number;
@@ -31,13 +33,13 @@ export function WeeklyStudyChart({
         aria-label="요일별 학습 시간 막대그래프"
       >
         {data.map((item) => {
-          const height = Math.max(10, (item.minutes / maxMinutes) * 100);
+          const height = getStudyBarHeight(item.minutes, maxMinutes);
 
           return (
             <div key={item.day} className="flex h-full min-w-0 flex-1 flex-col justify-end">
               <div className="group flex flex-1 items-end justify-center">
                 <div
-                  className="w-full max-w-9 rounded-t-lg bg-primary-soft group-hover:bg-indigo-200"
+                  className="w-full max-w-9 rounded-t-lg bg-primary-soft transition-colors group-hover:bg-indigo-200"
                   style={{ height: `${height}%` }}
                   title={`${item.day}요일 ${item.minutes}분`}
                 >
