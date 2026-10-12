@@ -5,9 +5,22 @@ interface StudyDay {
 
 interface WeeklyStudyChartProps {
   data: StudyDay[];
+  totalMinutes: number;
 }
 
-export function WeeklyStudyChart({ data }: WeeklyStudyChartProps) {
+function formatMinutes(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (hours === 0) return `${remainingMinutes}분`;
+  if (remainingMinutes === 0) return `${hours}시간`;
+  return `${hours}시간 ${remainingMinutes}분`;
+}
+
+export function WeeklyStudyChart({
+  data,
+  totalMinutes,
+}: WeeklyStudyChartProps) {
   const maxMinutes = Math.max(...data.map((item) => item.minutes), 1);
 
   return (
@@ -41,7 +54,7 @@ export function WeeklyStudyChart({ data }: WeeklyStudyChartProps) {
         })}
       </div>
       <p className="mt-4 text-xs leading-5 text-muted">
-        이번 주에는 총 10시간 50분을 학습했고, 목요일에 가장 오래 집중했어요.
+        이번 주에는 총 {formatMinutes(totalMinutes)}을 학습했습니다.
       </p>
     </div>
   );
