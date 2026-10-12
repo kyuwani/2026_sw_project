@@ -117,6 +117,8 @@ describeWithDatabase("analytics queries database integration", () => {
 
     expect(analytics?.weeklyStudy.totalMinutes).toBe(90);
     expect(analytics?.monthlyStudy.totalMinutes).toBe(60);
+    expect(analytics?.selectedStudy.totalMinutes).toBe(60);
+    expect(analytics?.learningStreak).toBe(2);
     expect(analytics?.taskCompletion).toEqual({
       totalCount: 2,
       completedCount: 1,

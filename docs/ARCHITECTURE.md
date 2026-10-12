@@ -288,6 +288,7 @@ GitHub API 장애가 프로젝트 자체 데이터 조회를 막지 않도록 �
 - GitHub 응답은 짧은 TTL을 적용할 수 있지만 사용자 토큰과 권한 경계를 지킨다.
 - Analytics 집계 테이블은 실제 성능 문제가 확인되기 전까지 만들지 않는다.
 - Analytics는 사용자 시간대로 이번 주와 이번 달의 날짜 경계를 먼저 계산하고, 두 기간의 합집합에 해당하는 학습 기록과 사용자 소유 프로젝트·Task를 병렬 조회한다. 주간·월간 일별 값, Task 완료율과 프로젝트 진행률은 애플리케이션 계층에서 원본 데이터로 계산한다.
+- Analytics 페이지는 Server Component에서 세션, Zod로 검증한 URL 기간과 집계 DTO를 준비한다. Recharts가 필요한 학습 막대와 기술 도넛만 Client Component로 분리하며, `ResponsiveContainer`와 차트 밖 텍스트 표·범례를 함께 사용한다.
 
 ## 12. 환경 변수
 

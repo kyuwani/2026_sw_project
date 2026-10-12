@@ -98,6 +98,9 @@ describe("getAnalyticsData", () => {
 
     expect(result?.weeklyStudy.totalMinutes).toBe(90);
     expect(result?.monthlyStudy.totalMinutes).toBe(60);
+    expect(result?.selectedPeriod).toBe("MONTH");
+    expect(result?.selectedStudy.totalMinutes).toBe(60);
+    expect(result?.learningStreak).toBe(2);
     expect(result?.taskCompletion).toEqual({
       totalCount: 3,
       completedCount: 2,
@@ -123,6 +126,52 @@ describe("getAnalyticsData", () => {
     );
     expect(prisma.project.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { userId: "user-id" } }),
+    );
+  });
+
+  it("uses a validated custom period for selected aggregates", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(userRecord);
+    const customLearningLogs = [
+      {
+        id: "custom-log",
+        title: "사용자 지정 학습",
+        content: "사용자 지정 기간",
+        studyMinutes: 40,
+        studiedAt: new Date("2026-09-15T00:00:00.000Z"),
+        category: "OTHER" as const,
+        userId: "user-id",
+        createdAt: new Date("2026-09-15T00:00:00.000Z"),
+        updatedAt: new Date("2026-09-15T00:00:00.000Z"),
+        technologies: [],
+      },
+    ];
+    vi.mocked(prisma.learningLog.findMany)
+      .mockResolvedValueOnce(customLearningLogs)
+      .mockResolvedValueOnce([]);
+    vi.mocked(prisma.project.findMany).mockResolvedValue([]);
+
+    const result = await getAnalyticsData(
+      "user-id",
+      new Date("2026-10-12T03:00:00.000Z"),
+      {
+        period: "CUSTOM",
+        startDate: new Date("2026-09-01T00:00:00.000Z"),
+        endDate: new Date("2026-09-30T00:00:00.000Z"),
+      },
+    );
+
+    expect(result?.selectedPeriod).toBe("CUSTOM");
+    expect(result?.selectedStudy.totalMinutes).toBe(40);
+    expect(prisma.learningLog.findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          studiedAt: {
+            gte: new Date("2026-09-01T00:00:00.000Z"),
+            lte: new Date("2026-10-31T00:00:00.000Z"),
+          },
+        }),
+      }),
     );
   });
 

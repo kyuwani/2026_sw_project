@@ -2,6 +2,7 @@ import "server-only";
 
 import type { ProjectStatusValue } from "@/features/projects/schemas";
 import { calculateTaskProgress } from "@/features/projects/progress";
+import { calculateLearningStreak } from "@/features/dashboard/streak";
 import { isValidTimeZone } from "@/lib/date/time-zone";
 import { prisma } from "@/lib/db/prisma";
 import {
@@ -9,10 +10,12 @@ import {
   calculateTaskCompletion,
   calculateTechnologyStudyBreakdown,
   getAnalyticsPeriods,
+  type AnalyticsPeriod,
   type StudyPeriodSummary,
   type TaskCompletionSummary,
   type TechnologyStudyItem,
 } from "./aggregation";
+import type { AnalyticsPeriodSelection } from "./schemas";
 
 export interface AnalyticsProjectProgress {
   id: string;
@@ -28,6 +31,9 @@ export interface AnalyticsData {
   today: Date;
   weeklyStudy: StudyPeriodSummary;
   monthlyStudy: StudyPeriodSummary;
+  selectedPeriod: AnalyticsPeriodSelection["period"];
+  selectedStudy: StudyPeriodSummary;
+  learningStreak: number;
   taskCompletion: TaskCompletionSummary;
   projectProgress: AnalyticsProjectProgress[];
   technologyStudy: TechnologyStudyItem[];
@@ -36,6 +42,7 @@ export interface AnalyticsData {
 export async function getAnalyticsData(
   userId: string,
   now = new Date(),
+  selection: AnalyticsPeriodSelection = { period: "MONTH" },
 ): Promise<AnalyticsData | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -47,16 +54,21 @@ export async function getAnalyticsData(
   }
 
   const periods = getAnalyticsPeriods(now, user.timezone);
-  const queryStart =
-    periods.week.startDate < periods.month.startDate
-      ? periods.week.startDate
-      : periods.month.startDate;
-  const queryEnd =
-    periods.week.endDate > periods.month.endDate
-      ? periods.week.endDate
-      : periods.month.endDate;
+  const selectedRange: AnalyticsPeriod =
+    selection.period === "WEEK"
+      ? periods.week
+      : selection.period === "MONTH"
+        ? periods.month
+        : { startDate: selection.startDate, endDate: selection.endDate };
+  const ranges = [periods.week, periods.month, selectedRange];
+  const queryStart = new Date(
+    Math.min(...ranges.map(({ startDate }) => startDate.getTime())),
+  );
+  const queryEnd = new Date(
+    Math.max(...ranges.map(({ endDate }) => endDate.getTime())),
+  );
 
-  const [learningLogs, projects] = await Promise.all([
+  const [learningLogs, studiedDates, projects] = await Promise.all([
     prisma.learningLog.findMany({
       where: {
         userId,
@@ -72,6 +84,12 @@ export async function getAnalyticsData(
         },
       },
     }),
+    prisma.learningLog.findMany({
+      where: { userId, studiedAt: { lte: periods.today } },
+      distinct: ["studiedAt"],
+      orderBy: { studiedAt: "desc" },
+      select: { studiedAt: true },
+    }),
     prisma.project.findMany({
       where: { userId },
       orderBy: { updatedAt: "desc" },
@@ -84,10 +102,9 @@ export async function getAnalyticsData(
     }),
   ]);
 
-  const monthlyLearningLogs = learningLogs.filter(
+  const selectedLearningLogs = learningLogs.filter(
     ({ studiedAt }) =>
-      studiedAt >= periods.month.startDate &&
-      studiedAt <= periods.month.endDate,
+      studiedAt >= selectedRange.startDate && studiedAt <= selectedRange.endDate,
   );
   const taskStatuses = projects.flatMap((project) =>
     project.tasks.map(({ status }) => status),
@@ -98,6 +115,12 @@ export async function getAnalyticsData(
     today: periods.today,
     weeklyStudy: aggregateStudyPeriod(learningLogs, periods.week),
     monthlyStudy: aggregateStudyPeriod(learningLogs, periods.month),
+    selectedPeriod: selection.period,
+    selectedStudy: aggregateStudyPeriod(learningLogs, selectedRange),
+    learningStreak: calculateLearningStreak(
+      studiedDates.map(({ studiedAt }) => studiedAt),
+      periods.today,
+    ),
     taskCompletion: calculateTaskCompletion(taskStatuses),
     projectProgress: projects.map((project) => {
       const taskCount = project.tasks.length;
@@ -114,6 +137,6 @@ export async function getAnalyticsData(
         progress: calculateTaskProgress(taskCount, completedTaskCount),
       };
     }),
-    technologyStudy: calculateTechnologyStudyBreakdown(monthlyLearningLogs),
+    technologyStudy: calculateTechnologyStudyBreakdown(selectedLearningLogs),
   };
 }
