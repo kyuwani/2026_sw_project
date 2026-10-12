@@ -19,6 +19,8 @@ const userRecord = {
   email: "user@example.invalid",
   emailVerified: null,
   image: null,
+  bio: null,
+  githubUrl: null,
   passwordHash: null,
   timezone: "Asia/Seoul",
   createdAt: new Date("2026-10-01T00:00:00.000Z"),

@@ -11,7 +11,13 @@ import { getAuthEnv } from "@/lib/env/server";
 const authEnv = getAuthEnv();
 const githubConfigured = Boolean(authEnv.AUTH_GITHUB_ID);
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const {
+  handlers,
+  auth,
+  signIn,
+  signOut,
+  unstable_update: updateSession,
+} = NextAuth({
   adapter: PrismaAdapter(prisma),
   secret: authEnv.AUTH_SECRET,
   session: { strategy: "jwt" },
@@ -64,9 +70,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...(githubConfigured ? [GitHub] : []),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.sub = user.id;
+      }
+      if (trigger === "update" && token.sub) {
+        const currentUser = await prisma.user.findUnique({
+          where: { id: token.sub },
+          select: { name: true },
+        });
+        token.name = currentUser?.name ?? null;
       }
 
       return token;

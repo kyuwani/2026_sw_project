@@ -31,6 +31,8 @@ describe("registerUser", () => {
       email: input.email,
       emailVerified: null,
       image: null,
+      bio: null,
+      githubUrl: null,
       passwordHash: "stored-hash",
       timezone: "Asia/Seoul",
       createdAt: new Date(),

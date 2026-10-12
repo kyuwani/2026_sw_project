@@ -47,20 +47,23 @@ enum GitHubRepositoryPermission {
 }
 
 model User {
-  id                 String             @id @default(uuid()) @db.Uuid
-  name               String?
-  email              String?            @unique
-  emailVerified      DateTime?
-  image              String?
-  passwordHash       String?
-  timezone           String             @default("Asia/Seoul")
-  accounts           Account[]
-  sessions           Session[]
-  projects           Project[]
-  learningLogs       LearningLog[]
-  githubRepositories GitHubRepository[]
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  id                  String             @id @default(uuid()) @db.Uuid
+  name                String?
+  email               String?            @unique
+  emailVerified       DateTime?
+  image               String?
+  bio                 String?            @db.Text
+  githubUrl           String?
+  passwordHash        String?
+  timezone            String             @default("Asia/Seoul")
+  accounts            Account[]
+  sessions            Session[]
+  projects            Project[]
+  learningLogs        LearningLog[]
+  githubRepositories  GitHubRepository[]
+  primaryTechnologies UserTechnology[]
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 }
 
 model Account {
@@ -186,7 +189,21 @@ model Technology {
   name         String                  @unique
   projects     ProjectTechnology[]
   learningLogs LearningLogTechnology[]
+  primaryUsers UserTechnology[]
   createdAt    DateTime                @default(now())
+}
+
+model UserTechnology {
+  userId       String     @db.Uuid
+  technologyId String     @db.Uuid
+  position     Int
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  technology   Technology @relation(fields: [technologyId], references: [id], onDelete: Restrict)
+  createdAt    DateTime   @default(now())
+
+  @@id([userId, technologyId])
+  @@unique([userId, position])
+  @@index([technologyId])
 }
 
 model ProjectTechnology {
