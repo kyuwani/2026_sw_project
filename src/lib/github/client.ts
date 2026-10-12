@@ -1,0 +1,202 @@
+import "server-only";
+
+import {
+  githubRepositoryListResponseSchema,
+  type GitHubRepositoryResponse,
+} from "./schemas";
+
+const GITHUB_API_URL = "https://api.github.com";
+const GITHUB_API_VERSION = "2026-03-10";
+const REPOSITORIES_PER_PAGE = 100;
+const MAX_REPOSITORY_PAGES = 5;
+
+export interface GitHubRepositoryDto {
+  externalId: number;
+  name: string;
+  fullName: string;
+  ownerLogin: string;
+  ownerAvatarUrl: string | null;
+  htmlUrl: string;
+  description: string | null;
+  visibility: "PRIVATE" | "PUBLIC";
+  permission: "ADMIN" | "WRITE" | "READ";
+  language: string | null;
+  defaultBranch: string;
+  isFork: boolean;
+  isArchived: boolean;
+  updatedAt: Date;
+  pushedAt: Date | null;
+}
+
+export interface GitHubRateLimit {
+  remaining: number | null;
+  resetAt: Date | null;
+}
+
+export type GitHubRepositoryClientResult =
+  | {
+      ok: true;
+      repositories: GitHubRepositoryDto[];
+      rateLimit: GitHubRateLimit;
+      truncated: boolean;
+    }
+  | {
+      ok: false;
+      reason:
+        | "REAUTH_REQUIRED"
+        | "FORBIDDEN"
+        | "RATE_LIMITED"
+        | "NETWORK_ERROR"
+        | "INVALID_RESPONSE"
+        | "API_ERROR";
+      retryAt: Date | null;
+    };
+
+interface GitHubClientOptions {
+  fetcher?: typeof fetch;
+  maxPages?: number;
+  now?: () => Date;
+}
+
+function parseHeaderInteger(value: string | null): number | null {
+  if (!value || !/^\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
+function readRateLimit(headers: Headers): GitHubRateLimit {
+  const remaining = parseHeaderInteger(headers.get("x-ratelimit-remaining"));
+  const reset = parseHeaderInteger(headers.get("x-ratelimit-reset"));
+
+  return {
+    remaining,
+    resetAt: reset === null ? null : new Date(reset * 1_000),
+  };
+}
+
+function getRetryAt(headers: Headers, now: Date): Date | null {
+  const retryAfter = parseHeaderInteger(headers.get("retry-after"));
+  if (retryAfter !== null) {
+    return new Date(now.getTime() + retryAfter * 1_000);
+  }
+  return readRateLimit(headers).resetAt;
+}
+
+function getPermission(
+  repository: GitHubRepositoryResponse,
+): GitHubRepositoryDto["permission"] {
+  if (repository.permissions?.admin) return "ADMIN";
+  if (repository.permissions?.maintain || repository.permissions?.push) {
+    return "WRITE";
+  }
+  return "READ";
+}
+
+function toRepositoryDto(
+  repository: GitHubRepositoryResponse,
+): GitHubRepositoryDto {
+  return {
+    externalId: repository.id,
+    name: repository.name,
+    fullName: repository.full_name,
+    ownerLogin: repository.owner.login,
+    ownerAvatarUrl: repository.owner.avatar_url ?? null,
+    htmlUrl: repository.html_url,
+    description: repository.description,
+    visibility: repository.private ? "PRIVATE" : "PUBLIC",
+    permission: getPermission(repository),
+    language: repository.language,
+    defaultBranch: repository.default_branch,
+    isFork: repository.fork,
+    isArchived: repository.archived,
+    updatedAt: new Date(repository.updated_at),
+    pushedAt: repository.pushed_at ? new Date(repository.pushed_at) : null,
+  };
+}
+
+export async function listGitHubRepositories(
+  accessToken: string,
+  options: GitHubClientOptions = {},
+): Promise<GitHubRepositoryClientResult> {
+  const fetcher = options.fetcher ?? fetch;
+  const maxPages = Math.max(1, options.maxPages ?? MAX_REPOSITORY_PAGES);
+  const now = options.now ?? (() => new Date());
+  const repositories: GitHubRepositoryDto[] = [];
+  let rateLimit: GitHubRateLimit = { remaining: null, resetAt: null };
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    const url = new URL("/user/repos", GITHUB_API_URL);
+    url.searchParams.set("affiliation", "owner,collaborator,organization_member");
+    url.searchParams.set("sort", "updated");
+    url.searchParams.set("direction", "desc");
+    url.searchParams.set("per_page", String(REPOSITORIES_PER_PAGE));
+    url.searchParams.set("page", String(page));
+
+    let response: Response;
+    try {
+      response = await fetcher(url, {
+        cache: "no-store",
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${accessToken}`,
+          "User-Agent": "DevLog",
+          "X-GitHub-Api-Version": GITHUB_API_VERSION,
+        },
+        signal: AbortSignal.timeout(10_000),
+      });
+    } catch {
+      return { ok: false, reason: "NETWORK_ERROR", retryAt: null };
+    }
+
+    rateLimit = readRateLimit(response.headers);
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        return { ok: false, reason: "REAUTH_REQUIRED", retryAt: null };
+      }
+      if (
+        response.status === 429 ||
+        (response.status === 403 &&
+          (rateLimit.remaining === 0 || response.headers.has("retry-after")))
+      ) {
+        return {
+          ok: false,
+          reason: "RATE_LIMITED",
+          retryAt: getRetryAt(response.headers, now()),
+        };
+      }
+      if (response.status === 403) {
+        return { ok: false, reason: "FORBIDDEN", retryAt: null };
+      }
+      return { ok: false, reason: "API_ERROR", retryAt: null };
+    }
+
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      return { ok: false, reason: "INVALID_RESPONSE", retryAt: null };
+    }
+
+    const parsed = githubRepositoryListResponseSchema.safeParse(body);
+    if (!parsed.success) {
+      return { ok: false, reason: "INVALID_RESPONSE", retryAt: null };
+    }
+
+    repositories.push(...parsed.data.map(toRepositoryDto));
+
+    if (parsed.data.length < REPOSITORIES_PER_PAGE) {
+      return { ok: true, repositories, rateLimit, truncated: false };
+    }
+
+    if (rateLimit.remaining === 0) {
+      return {
+        ok: false,
+        reason: "RATE_LIMITED",
+        retryAt: rateLimit.resetAt,
+      };
+    }
+  }
+
+  return { ok: true, repositories, rateLimit, truncated: true };
+}

@@ -113,6 +113,8 @@ Auth.js Prisma Adapter가 요구하는 표준 모델이다. Account는 Provider 
 
 Account의 `(provider, providerAccountId)`와 Session의 `sessionToken`은 unique다. 각 User 관계에는 사용자 기준 인덱스를 둔다.
 
+GitHub Repository 조회 시 Account는 `userId`와 `provider = github`를 함께 조건으로 조회하고 `access_token`만 선택한다. 토큰은 서버 내부 GitHub client 호출에만 사용하며 DTO, 브라우저 응답 또는 로그에 포함하지 않는다.
+
 ### 6.3 Project
 
 사용자가 관리하는 개발 프로젝트다.

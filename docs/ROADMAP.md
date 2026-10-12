@@ -356,6 +356,8 @@ DB 연결 후 후속 확인:
 
 ### Day 19 — GitHub Repository 조회
 
+상태: **완료** (2026-10-12)
+
 작업:
 
 - GitHub access token 서버 접근

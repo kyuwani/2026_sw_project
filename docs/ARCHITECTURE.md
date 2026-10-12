@@ -207,15 +207,17 @@ Server Action의 반환값은 성공 여부와 사용자에게 보여 줄 안전
 
 ```text
 Server Component or service
- → 서버에 저장된 GitHub 연결 정보 확인
- → GitHub API 호출
+ → userId와 provider로 서버에 저장된 GitHub 연결 정보 확인
+ → access token을 서버 내부 GitHub client에만 전달
+ → GitHub API 호출(no-store, 최대 5페이지)
  → 상태 코드 및 응답 스키마 검증
- → 내부 DTO로 변환
- → 제한된 시간 동안 캐시
+ → 토큰을 포함하지 않는 내부 DTO로 변환
+ → 연결·재인증·rate limit·일시 장애 상태로 반환
  → UI 렌더링
 ```
 
 GitHub API 장애가 프로젝트 자체 데이터 조회를 막지 않도록 외부 활동 영역은 독립적인 오류 상태를 가진다.
+Day 19의 Repository 원격 조회는 사용자별 토큰 응답이 공유되지 않도록 캐시하지 않는다. Day 20에서 프로젝트에 연결한 Repository 기본 정보만 DB에 캐시한다.
 
 ## 8. 인증 구조
 
