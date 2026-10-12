@@ -76,6 +76,7 @@ describe("getDashboardData", () => {
         startDate: null,
         endDate: new Date("2026-10-31T00:00:00.000Z"),
         repositoryUrl: null,
+        repositoryId: null,
         userId: "user-id",
         createdAt: new Date("2026-10-01T00:00:00.000Z"),
         updatedAt: new Date("2026-10-12T00:00:00.000Z"),

@@ -12,7 +12,11 @@ export async function updateProject(
   return prisma.$transaction(async (transaction) => {
     const ownedProject = await transaction.project.findFirst({
       where: { id: projectId, userId },
-      select: { id: true },
+      select: {
+        id: true,
+        repositoryId: true,
+        repository: { select: { htmlUrl: true } },
+      },
     });
 
     if (!ownedProject) {
@@ -33,6 +37,10 @@ export async function updateProject(
         startDate: input.startDate,
         endDate: input.endDate,
         repositoryUrl: input.repositoryUrl,
+        repositoryId:
+          ownedProject.repository?.htmlUrl === input.repositoryUrl
+            ? ownedProject.repositoryId
+            : null,
         technologies: {
           deleteMany: {},
           create: technologies.map(({ id }) => ({ technologyId: id })),

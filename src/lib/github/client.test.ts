@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { listGitHubRepositories } from "./client";
+import { listGitHubRecentCommits, listGitHubRepositories } from "./client";
 
 vi.mock("server-only", () => ({}));
 
@@ -116,7 +116,12 @@ describe("listGitHubRepositories", () => {
 
   it("limits pagination and reports a truncated result", async () => {
     const repositories = Array.from({ length: 100 }, (_, index) =>
-      repositoryResponse({ id: index + 1, name: `repo-${index}`, full_name: `octocat/repo-${index}` }),
+      repositoryResponse({
+        id: index + 1,
+        name: `repo-${index}`,
+        full_name: `octocat/repo-${index}`,
+        html_url: `https://github.com/octocat/repo-${index}`,
+      }),
     );
     const fetcher = vi
       .fn<typeof fetch>()
@@ -139,6 +144,81 @@ describe("listGitHubRepositories", () => {
     ).resolves.toEqual({
       ok: false,
       reason: "NETWORK_ERROR",
+      retryAt: null,
+    });
+  });
+});
+
+describe("listGitHubRecentCommits", () => {
+  it("returns validated recent commit DTOs without exposing the token", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(
+        JSON.stringify([
+          {
+            sha: "abcdef1234567890abcdef1234567890abcdef12",
+            html_url:
+              "https://github.com/octocat/devlog/commit/abcdef1234567890abcdef1234567890abcdef12",
+            commit: {
+              message: "feat: 연결 기능 구현\n\n상세 설명",
+              author: {
+                name: "Octocat",
+                date: "2026-10-12T03:00:00Z",
+              },
+            },
+            author: {
+              login: "octocat",
+              avatar_url: "https://avatars.githubusercontent.com/u/1?v=4",
+            },
+          },
+        ]),
+        { status: 200, headers: { "x-ratelimit-remaining": "42" } },
+      ),
+    );
+
+    const result = await listGitHubRecentCommits(
+      "secret-token",
+      "octocat",
+      "devlog",
+      { fetcher },
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      commits: [
+        {
+          sha: "abcdef1234567890abcdef1234567890abcdef12",
+          shortSha: "abcdef1",
+          message: "feat: 연결 기능 구현",
+          authorName: "Octocat",
+          authorLogin: "octocat",
+          authorAvatarUrl: "https://avatars.githubusercontent.com/u/1?v=4",
+          committedAt: new Date("2026-10-12T03:00:00Z"),
+          htmlUrl:
+            "https://github.com/octocat/devlog/commit/abcdef1234567890abcdef1234567890abcdef12",
+        },
+      ],
+      rateLimit: { remaining: 42, resetAt: null },
+    });
+    const [url, request] = fetcher.mock.calls[0];
+    expect(String(url)).toContain("/repos/octocat/devlog/commits?per_page=5");
+    expect(new Headers(request?.headers).get("Authorization")).toBe(
+      "Bearer secret-token",
+    );
+    expect(JSON.stringify(result)).not.toContain("secret-token");
+  });
+
+  it("rejects malformed commit responses safely", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify([{ sha: "invalid" }]), { status: 200 }),
+    );
+
+    await expect(
+      listGitHubRecentCommits("secret-token", "octocat", "devlog", {
+        fetcher,
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      reason: "INVALID_RESPONSE",
       retryAt: null,
     });
   });

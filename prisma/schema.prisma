@@ -35,20 +35,32 @@ enum LearningCategory {
   OTHER
 }
 
+enum GitHubRepositoryVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum GitHubRepositoryPermission {
+  ADMIN
+  WRITE
+  READ
+}
+
 model User {
-  id            String        @id @default(uuid()) @db.Uuid
-  name          String?
-  email         String?       @unique
-  emailVerified DateTime?
-  image         String?
-  passwordHash  String?
-  timezone      String        @default("Asia/Seoul")
-  accounts      Account[]
-  sessions      Session[]
-  projects      Project[]
-  learningLogs  LearningLog[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                 String             @id @default(uuid()) @db.Uuid
+  name               String?
+  email              String?            @unique
+  emailVerified      DateTime?
+  image              String?
+  passwordHash       String?
+  timezone           String             @default("Asia/Seoul")
+  accounts           Account[]
+  sessions           Session[]
+  projects           Project[]
+  learningLogs       LearningLog[]
+  githubRepositories GitHubRepository[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 }
 
 model Account {
@@ -96,8 +108,10 @@ model Project {
   startDate     DateTime?           @db.Date
   endDate       DateTime?           @db.Date
   repositoryUrl String?
+  repositoryId  String?             @db.Uuid
   userId        String              @db.Uuid
   user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repository    GitHubRepository?   @relation(fields: [repositoryId], references: [id], onDelete: SetNull)
   tasks         Task[]
   technologies  ProjectTechnology[]
   createdAt     DateTime            @default(now())
@@ -105,6 +119,33 @@ model Project {
 
   @@index([userId, status])
   @@index([userId, updatedAt])
+  @@index([repositoryId])
+}
+
+model GitHubRepository {
+  id              String                     @id @default(uuid()) @db.Uuid
+  externalId      String
+  name            String
+  fullName        String
+  ownerLogin      String
+  ownerAvatarUrl  String?
+  htmlUrl         String
+  description     String?                    @db.Text
+  visibility      GitHubRepositoryVisibility
+  permission      GitHubRepositoryPermission
+  language        String?
+  defaultBranch   String
+  isFork          Boolean
+  isArchived      Boolean
+  remoteUpdatedAt DateTime
+  remotePushedAt  DateTime?
+  cachedAt        DateTime                   @default(now())
+  userId          String                     @db.Uuid
+  user            User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects        Project[]
+
+  @@unique([userId, externalId])
+  @@index([userId, remoteUpdatedAt])
 }
 
 model Task {

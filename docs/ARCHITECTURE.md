@@ -218,6 +218,7 @@ Server Component or service
 
 GitHub API 장애가 프로젝트 자체 데이터 조회를 막지 않도록 외부 활동 영역은 독립적인 오류 상태를 가진다.
 Day 19의 Repository 원격 조회는 사용자별 토큰 응답이 공유되지 않도록 캐시하지 않는다. Day 20에서 프로젝트에 연결한 Repository 기본 정보만 DB에 캐시한다.
+Repository 연결 Server Action은 세션 사용자, 프로젝트 소유권과 GitHub 접근 가능 목록을 모두 다시 검증한다. 검증된 Repository는 사용자별 외부 ID로 upsert하고 Project 연결과 URL 변경을 같은 transaction에서 처리한다. 최근 Commit은 저장하지 않고 서버에서 실시간 조회하며, 실패해도 캐시된 Repository와 프로젝트 데이터는 렌더링한다.
 
 ## 8. 인증 구조
 

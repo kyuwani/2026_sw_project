@@ -373,6 +373,8 @@ DB 연결 후 후속 확인:
 
 ### Day 20 — Project와 Repository 연결
 
+상태: **완료** (2026-10-12)
+
 작업:
 
 - Repository 캐시 upsert

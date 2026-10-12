@@ -1,7 +1,9 @@
 import "server-only";
 
 import {
+  githubCommitListResponseSchema,
   githubRepositoryListResponseSchema,
+  type GitHubCommitResponse,
   type GitHubRepositoryResponse,
 } from "./schemas";
 
@@ -9,6 +11,7 @@ const GITHUB_API_URL = "https://api.github.com";
 const GITHUB_API_VERSION = "2026-03-10";
 const REPOSITORIES_PER_PAGE = 100;
 const MAX_REPOSITORY_PAGES = 5;
+const RECENT_COMMIT_COUNT = 5;
 
 export interface GitHubRepositoryDto {
   externalId: number;
@@ -33,6 +36,29 @@ export interface GitHubRateLimit {
   resetAt: Date | null;
 }
 
+export interface GitHubCommitDto {
+  sha: string;
+  shortSha: string;
+  message: string;
+  authorName: string;
+  authorLogin: string | null;
+  authorAvatarUrl: string | null;
+  committedAt: Date | null;
+  htmlUrl: string;
+}
+
+type GitHubClientFailure = {
+  ok: false;
+  reason:
+    | "REAUTH_REQUIRED"
+    | "FORBIDDEN"
+    | "RATE_LIMITED"
+    | "NETWORK_ERROR"
+    | "INVALID_RESPONSE"
+    | "API_ERROR";
+  retryAt: Date | null;
+};
+
 export type GitHubRepositoryClientResult =
   | {
       ok: true;
@@ -40,17 +66,15 @@ export type GitHubRepositoryClientResult =
       rateLimit: GitHubRateLimit;
       truncated: boolean;
     }
+  | GitHubClientFailure;
+
+export type GitHubCommitClientResult =
   | {
-      ok: false;
-      reason:
-        | "REAUTH_REQUIRED"
-        | "FORBIDDEN"
-        | "RATE_LIMITED"
-        | "NETWORK_ERROR"
-        | "INVALID_RESPONSE"
-        | "API_ERROR";
-      retryAt: Date | null;
-    };
+      ok: true;
+      commits: GitHubCommitDto[];
+      rateLimit: GitHubRateLimit;
+    }
+  | GitHubClientFailure;
 
 interface GitHubClientOptions {
   fetcher?: typeof fetch;
@@ -114,6 +138,63 @@ function toRepositoryDto(
   };
 }
 
+function toCommitDto(commit: GitHubCommitResponse): GitHubCommitDto {
+  const message =
+    commit.commit.message
+      .split("\n")
+      .find((line) => line.trim().length > 0)
+      ?.trim() ?? "Commit 메시지 없음";
+
+  return {
+    sha: commit.sha,
+    shortSha: commit.sha.slice(0, 7),
+    message: message.length > 120 ? `${message.slice(0, 117)}...` : message,
+    authorName: commit.commit.author?.name ?? commit.author?.login ?? "알 수 없음",
+    authorLogin: commit.author?.login ?? null,
+    authorAvatarUrl: commit.author?.avatar_url ?? null,
+    committedAt: commit.commit.author
+      ? new Date(commit.commit.author.date)
+      : null,
+    htmlUrl: commit.html_url,
+  };
+}
+
+function getRequestHeaders(accessToken: string): HeadersInit {
+  return {
+    Accept: "application/vnd.github+json",
+    Authorization: `Bearer ${accessToken}`,
+    "User-Agent": "DevLog",
+    "X-GitHub-Api-Version": GITHUB_API_VERSION,
+  };
+}
+
+function getResponseFailure(
+  response: Response,
+  now: Date,
+): GitHubClientFailure | null {
+  if (response.ok) return null;
+
+  const rateLimit = readRateLimit(response.headers);
+  if (response.status === 401) {
+    return { ok: false, reason: "REAUTH_REQUIRED", retryAt: null };
+  }
+  if (
+    response.status === 429 ||
+    (response.status === 403 &&
+      (rateLimit.remaining === 0 || response.headers.has("retry-after")))
+  ) {
+    return {
+      ok: false,
+      reason: "RATE_LIMITED",
+      retryAt: getRetryAt(response.headers, now),
+    };
+  }
+  if (response.status === 403) {
+    return { ok: false, reason: "FORBIDDEN", retryAt: null };
+  }
+  return { ok: false, reason: "API_ERROR", retryAt: null };
+}
+
 export async function listGitHubRepositories(
   accessToken: string,
   options: GitHubClientOptions = {},
@@ -136,12 +217,7 @@ export async function listGitHubRepositories(
     try {
       response = await fetcher(url, {
         cache: "no-store",
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${accessToken}`,
-          "User-Agent": "DevLog",
-          "X-GitHub-Api-Version": GITHUB_API_VERSION,
-        },
+        headers: getRequestHeaders(accessToken),
         signal: AbortSignal.timeout(10_000),
       });
     } catch {
@@ -150,26 +226,8 @@ export async function listGitHubRepositories(
 
     rateLimit = readRateLimit(response.headers);
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        return { ok: false, reason: "REAUTH_REQUIRED", retryAt: null };
-      }
-      if (
-        response.status === 429 ||
-        (response.status === 403 &&
-          (rateLimit.remaining === 0 || response.headers.has("retry-after")))
-      ) {
-        return {
-          ok: false,
-          reason: "RATE_LIMITED",
-          retryAt: getRetryAt(response.headers, now()),
-        };
-      }
-      if (response.status === 403) {
-        return { ok: false, reason: "FORBIDDEN", retryAt: null };
-      }
-      return { ok: false, reason: "API_ERROR", retryAt: null };
-    }
+    const failure = getResponseFailure(response, now());
+    if (failure) return failure;
 
     let body: unknown;
     try {
@@ -199,4 +257,51 @@ export async function listGitHubRepositories(
   }
 
   return { ok: true, repositories, rateLimit, truncated: true };
+}
+
+export async function listGitHubRecentCommits(
+  accessToken: string,
+  owner: string,
+  repository: string,
+  options: GitHubClientOptions = {},
+): Promise<GitHubCommitClientResult> {
+  const fetcher = options.fetcher ?? fetch;
+  const now = options.now ?? (() => new Date());
+  const url = new URL(
+    `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/commits`,
+    GITHUB_API_URL,
+  );
+  url.searchParams.set("per_page", String(RECENT_COMMIT_COUNT));
+
+  let response: Response;
+  try {
+    response = await fetcher(url, {
+      cache: "no-store",
+      headers: getRequestHeaders(accessToken),
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    return { ok: false, reason: "NETWORK_ERROR", retryAt: null };
+  }
+
+  const failure = getResponseFailure(response, now());
+  if (failure) return failure;
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    return { ok: false, reason: "INVALID_RESPONSE", retryAt: null };
+  }
+
+  const parsed = githubCommitListResponseSchema.safeParse(body);
+  if (!parsed.success) {
+    return { ok: false, reason: "INVALID_RESPONSE", retryAt: null };
+  }
+
+  return {
+    ok: true,
+    commits: parsed.data.map(toCommitDto),
+    rateLimit: readRateLimit(response.headers),
+  };
 }

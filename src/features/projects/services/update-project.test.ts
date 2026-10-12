@@ -43,7 +43,11 @@ describe("updateProject", () => {
   });
 
   it("checks ownership before updating and replaces technology links", async () => {
-    projectFindFirst.mockResolvedValue({ id: "project-id" });
+    projectFindFirst.mockResolvedValue({
+      id: "project-id",
+      repositoryId: null,
+      repository: null,
+    });
     technologyCreateMany.mockResolvedValue({ count: 2 });
     technologyFindMany.mockResolvedValue([
       { id: "react-id" },
@@ -57,12 +61,17 @@ describe("updateProject", () => {
 
     expect(projectFindFirst).toHaveBeenCalledWith({
       where: { id: "project-id", userId: "user-id" },
-      select: { id: true },
+      select: {
+        id: true,
+        repositoryId: true,
+        repository: { select: { htmlUrl: true } },
+      },
     });
     expect(projectUpdate).toHaveBeenCalledWith({
       where: { id: "project-id" },
       data: expect.objectContaining({
         title: "수정된 프로젝트",
+        repositoryId: null,
         technologies: {
           deleteMany: {},
           create: [
@@ -84,5 +93,27 @@ describe("updateProject", () => {
     expect(technologyCreateMany).not.toHaveBeenCalled();
     expect(technologyFindMany).not.toHaveBeenCalled();
     expect(projectUpdate).not.toHaveBeenCalled();
+  });
+
+  it("keeps a connected repository when its URL is unchanged", async () => {
+    projectFindFirst.mockResolvedValue({
+      id: "project-id",
+      repositoryId: "repository-id",
+      repository: { htmlUrl: input.repositoryUrl },
+    });
+    technologyCreateMany.mockResolvedValue({ count: 2 });
+    technologyFindMany.mockResolvedValue([
+      { id: "react-id" },
+      { id: "typescript-id" },
+    ]);
+    projectUpdate.mockResolvedValue({ id: "project-id" });
+
+    await updateProject("user-id", "project-id", input);
+
+    expect(projectUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ repositoryId: "repository-id" }),
+      }),
+    );
   });
 });

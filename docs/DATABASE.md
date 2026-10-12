@@ -35,7 +35,9 @@
 User
  ├─ Project
  │   ├─ Task
- │   └─ ProjectTechnology ─ Technology
+ │   ├─ ProjectTechnology ─ Technology
+ │   └─ GitHubRepository
+ ├─ GitHubRepository
  └─ LearningLog
      └─ LearningLogTechnology ─ Technology
 ```
@@ -85,6 +87,10 @@ DB enum 값은 UI 표시 문구와 분리한다. 예를 들어 `IN_PROGRESS`는 
 | `DEVOPS` | 인프라·DevOps |
 | `OTHER` | 기타 |
 
+### GitHubRepositoryVisibility / GitHubRepositoryPermission
+
+GitHub 응답에서 검증한 공개 범위는 `PRIVATE`, `PUBLIC`로, 사용자 권한은 `ADMIN`, `WRITE`, `READ`로 제한한다.
+
 ## 6. 모델
 
 ### 6.1 User
@@ -128,15 +134,22 @@ GitHub Repository 조회 시 Account는 `userId`와 `provider = github`를 함�
 | `startDate` | Date? | 시작일 |
 | `endDate` | Date? | 종료일 |
 | `repositoryUrl` | String? | 연결할 GitHub Repository URL |
+| `repositoryId` | UUID? | FK → GitHubRepository, 연결 해제 시 null |
 | `userId` | UUID | FK → User |
 | `createdAt` | DateTime | 생성 시각 |
 | `updatedAt` | DateTime | 수정 시각 |
 
-관계: `user`, `tasks`, `technologies`.
+관계: `user`, `tasks`, `technologies`, `repository`.
 
 계획 단계에서 날짜나 Repository가 정해지지 않은 프로젝트를 저장할 수 있도록 `startDate`, `endDate`, `repositoryUrl`은 선택값으로 유지한다. `endDate >= startDate`와 Repository URL 형식은 CRUD 구현 시 서버 입력 검증에서 보장한다.
 
-### 6.4 Task
+### 6.4 GitHubRepository
+
+사용자가 프로젝트에 연결한 GitHub Repository의 기본 정보를 캐시한다. `externalId`는 GitHub Repository ID를 문자열로 보존하며 `(userId, externalId)`로 사용자별 중복을 막는다. 원격 수정·push 시각과 캐시 시각을 구분하고, access token과 최근 Commit은 저장하지 않는다.
+
+Project는 하나의 Repository를 선택적으로 참조하고 하나의 Repository는 여러 Project에 연결될 수 있다. 연결 시 프로젝트 소유권과 사용자의 GitHub 접근 가능 목록을 검증한 뒤 캐시 upsert와 Project 연결을 transaction으로 처리한다.
+
+### 6.5 Task
 
 Project에 속하는 작업 단위다.
 
@@ -155,7 +168,7 @@ Project에 속하는 작업 단위다.
 
 관계: `project`. Task 소유권은 `project.userId`를 통해 검증한다. `completedAt`은 완료 시점 기반 최근 활동과 기간별 분석을 위해 저장하며, `DONE` 전환 시 기록하고 다른 상태로 되돌릴 때 null로 만드는 규칙은 Task 서비스에서 트랜잭션으로 보장한다.
 
-### 6.5 LearningLog
+### 6.6 LearningLog
 
 사용자의 날짜별 학습 기록이다.
 
@@ -175,7 +188,7 @@ Project에 속하는 작업 단위다.
 
 `studyMinutes`는 1분 이상 24시간 이하로 제한하고 미래 학습일은 허용하지 않는다. 날짜 상한은 User의 IANA `timezone`을 기준으로 Learning Log 입력 스키마에서 검증한다.
 
-### 6.6 Technology
+### 6.7 Technology
 
 Project와 LearningLog가 공유하는 정규화된 기술 이름이다.
 
@@ -189,7 +202,7 @@ Project와 LearningLog가 공유하는 정규화된 기술 이름이다.
 
 MVP 필드만 유지하며 기술 카테고리, 아이콘, 별칭은 실제 요구가 생길 때 확장한다.
 
-### 6.7 ProjectTechnology
+### 6.8 ProjectTechnology
 
 Project와 Technology의 명시적 연결 모델이다.
 
@@ -199,7 +212,7 @@ Project와 Technology의 명시적 연결 모델이다.
 | `technologyId` | UUID | 복합 PK, FK → Technology |
 | `createdAt` | DateTime | 연결 시각 |
 
-### 6.8 LearningLogTechnology
+### 6.9 LearningLogTechnology
 
 LearningLog와 Technology의 명시적 연결 모델이다.
 
@@ -224,8 +237,9 @@ implicit many-to-many 대신 명시적 연결 모델을 사용한다.
 
 | 삭제 대상 | 처리 |
 | --- | --- |
-| User | 소유한 Project와 LearningLog를 cascade 삭제한다. 하위 Task와 연결 모델도 연쇄 정리된다. |
-| Project | Task와 ProjectTechnology를 cascade 삭제한다. |
+| User | 소유한 Project, LearningLog와 GitHubRepository를 cascade 삭제한다. 하위 Task와 연결 모델도 연쇄 정리된다. |
+| Project | Task와 ProjectTechnology를 cascade 삭제한다. GitHubRepository 캐시는 유지한다. |
+| GitHubRepository | Project의 `repositoryId`를 null로 만들고 프로젝트 자체 데이터는 유지한다. |
 | Task | 해당 Task만 삭제한다. |
 | LearningLog | LearningLogTechnology를 cascade 삭제한다. |
 | Technology | ProjectTechnology 또는 LearningLogTechnology에서 사용 중이면 `Restrict`한다. 미사용 기술만 삭제할 수 있다. |
@@ -243,6 +257,7 @@ MVP에는 soft delete를 도입하지 않는다. User 삭제는 영향 범위가
 - `Technology.name`: 기술 사전 중복 방지
 - `ProjectTechnology(projectId, technologyId)`: 프로젝트의 기술 중복 연결 방지
 - `LearningLogTechnology(learningLogId, technologyId)`: 학습 기록의 기술 중복 연결 방지
+- `GitHubRepository(userId, externalId)`: 사용자별 GitHub Repository 캐시 중복 방지
 
 ### Index
 
@@ -250,6 +265,8 @@ MVP에는 soft delete를 도입하지 않는다. User 삭제는 영향 범위가
 | --- | --- | --- |
 | Project | `(userId, status)` | 사용자별 프로젝트와 상태 필터 |
 | Project | `(userId, updatedAt)` | 사용자별 최근 프로젝트 정렬 |
+| Project | `(repositoryId)` | Repository에 연결된 프로젝트 조회와 FK 처리 |
+| GitHubRepository | `(userId, remoteUpdatedAt)` | 사용자별 Repository 최신 수정순 조회 |
 | Task | `(projectId, status)` | 프로젝트별 Task와 상태 필터 |
 | Task | `(projectId, dueDate)` | 프로젝트별 마감일 정렬·조회 |
 | LearningLog | `(userId, studiedAt)` | 사용자별 날짜 범위·최신 학습 기록 |

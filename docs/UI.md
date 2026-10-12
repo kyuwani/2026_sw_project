@@ -219,6 +219,8 @@ Day 16부터 최근 프로젝트 변경, Task 완료, 학습 기록 작성을 �
 - 진행률 요약
 - Task 영역
 - GitHub Repository 요약과 최근 Commit
+- 접근 가능한 Repository 선택·변경과 연결 해제 상태
+- GitHub API 장애 시 캐시된 Repository 정보와 안전한 Commit 오류 상태
 - 위험 영역: 프로젝트 삭제
 
 ## 9. Tasks

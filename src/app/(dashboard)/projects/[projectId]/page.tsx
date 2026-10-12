@@ -2,6 +2,8 @@ import {
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
+  ExternalLink,
+  GitCommitHorizontal,
   GitFork,
   ListChecks,
   Pencil,
@@ -23,6 +25,9 @@ import {
 } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Progress } from "@/components/ui/progress";
+import { getProjectGitHubActivity } from "@/features/github/activity";
+import { RepositoryConnectionForm } from "@/features/github/components/repository-connection-form";
+import { getGitHubRepositories } from "@/features/github/repositories";
 import { ProjectStatusBadge } from "@/features/projects/components/project-status-badge";
 import { DeleteProjectDialog } from "@/features/projects/components/delete-project-dialog";
 import { getProjectDetail } from "@/features/projects/queries";
@@ -35,6 +40,11 @@ const projectIdSchema = z.uuid();
 const dateFormatter = new Intl.DateTimeFormat("ko-KR", {
   dateStyle: "long",
   timeZone: "UTC",
+});
+const commitDateFormatter = new Intl.DateTimeFormat("ko-KR", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Asia/Seoul",
 });
 
 interface ProjectDetailPageProps {
@@ -77,6 +87,11 @@ export default async function ProjectDetailPage({
   if (!project) {
     notFound();
   }
+
+  const [repositoryList, githubActivity] = await Promise.all([
+    getGitHubRepositories(session.user.id),
+    getProjectGitHubActivity(session.user.id, parsedProjectId.data),
+  ]);
 
   const rawSearchParams = await searchParams;
   const feedback = successSearchParamSchema.safeParse(rawSearchParams.updated)
@@ -171,6 +186,140 @@ export default async function ProjectDetailPage({
       </section>
 
       <TaskList projectId={project.id} tasks={tasks} />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>GitHub Repository</CardTitle>
+          <CardDescription>
+            접근 가능한 Repository를 연결하고 최근 Commit을 확인합니다.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <RepositoryConnectionForm
+            currentExternalId={
+              githubActivity.status === "CONNECTED"
+                ? githubActivity.repository.externalId
+                : null
+            }
+            listStatus={repositoryList.status}
+            projectId={project.id}
+            repositories={
+              repositoryList.status === "CONNECTED"
+                ? repositoryList.repositories.map((repository) => ({
+                    externalId: repository.externalId,
+                    fullName: repository.fullName,
+                    visibility: repository.visibility,
+                    isArchived: repository.isArchived,
+                  }))
+                : []
+            }
+          />
+
+          {githubActivity.status === "CONNECTED" ? (
+            <div className="space-y-5 border-t border-border pt-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <Link
+                    className="inline-flex items-center gap-2 break-all font-semibold text-primary hover:text-primary-hover"
+                    href={githubActivity.repository.htmlUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <GitFork aria-hidden="true" className="size-4 shrink-0" />
+                    {githubActivity.repository.fullName}
+                    <ExternalLink aria-hidden="true" className="size-3.5 shrink-0" />
+                  </Link>
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    {githubActivity.repository.description ??
+                      "등록된 Repository 설명이 없습니다."}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Badge variant="outline">
+                    {githubActivity.repository.visibility === "PRIVATE"
+                      ? "Private"
+                      : "Public"}
+                  </Badge>
+                  {githubActivity.repository.isArchived ? (
+                    <Badge variant="warning">보관됨</Badge>
+                  ) : null}
+                </div>
+              </div>
+
+              <dl className="grid gap-3 text-sm sm:grid-cols-3">
+                <div>
+                  <dt className="text-muted">기본 브랜치</dt>
+                  <dd className="mt-1 font-medium">
+                    {githubActivity.repository.defaultBranch}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted">주 언어</dt>
+                  <dd className="mt-1 font-medium">
+                    {githubActivity.repository.language ?? "확인되지 않음"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted">권한</dt>
+                  <dd className="mt-1 font-medium">
+                    {githubActivity.repository.permission}
+                  </dd>
+                </div>
+              </dl>
+
+              <div>
+                <h3 className="flex items-center gap-2 font-semibold">
+                  <GitCommitHorizontal aria-hidden="true" className="size-4" />
+                  최근 Commit
+                </h3>
+                {githubActivity.commits.status === "AVAILABLE" ? (
+                  githubActivity.commits.commits.length > 0 ? (
+                    <ul className="mt-3 divide-y divide-border rounded-card border border-border">
+                      {githubActivity.commits.commits.map((commit) => (
+                        <li className="p-3.5" key={commit.sha}>
+                          <Link
+                            className="font-medium text-foreground hover:text-primary"
+                            href={commit.htmlUrl}
+                            rel="noreferrer"
+                            target="_blank"
+                          >
+                            {commit.message}
+                          </Link>
+                          <p className="mt-1.5 text-xs text-muted">
+                            <span className="font-mono">{commit.shortSha}</span>
+                            {" · "}
+                            {commit.authorLogin ?? commit.authorName}
+                            {" · "}
+                            {commit.committedAt
+                              ? commitDateFormatter.format(commit.committedAt)
+                              : "날짜 정보 없음"}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-3 text-sm text-muted">
+                      표시할 Commit이 없습니다.
+                    </p>
+                  )
+                ) : (
+                  <p className="mt-3 rounded-control bg-surface-subtle px-3.5 py-3 text-sm text-muted">
+                    {githubActivity.commits.status === "REAUTH_REQUIRED"
+                      ? "최근 Commit을 보려면 GitHub 권한을 다시 확인해 주세요."
+                      : githubActivity.commits.status === "RATE_LIMITED"
+                        ? "GitHub 요청 한도에 도달해 최근 Commit을 불러오지 못했습니다."
+                        : "GitHub 장애로 최근 Commit을 불러오지 못했습니다. 프로젝트 정보는 정상적으로 사용할 수 있습니다."}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="border-t border-border pt-5 text-sm text-muted">
+              연결된 Repository가 없습니다.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(18rem,0.6fr)]">
         <Card>
