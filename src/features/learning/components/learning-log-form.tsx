@@ -14,30 +14,56 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { createLearningLogAction } from "@/features/learning/actions";
+import {
+  createLearningLogAction,
+  updateLearningLogAction,
+} from "@/features/learning/actions";
+import { LEARNING_CATEGORY_LABELS } from "@/features/learning/presentation";
+import {
+  LEARNING_CATEGORY_VALUES,
+  type LearningCategoryValue,
+} from "@/features/learning/schemas";
 import { TECHNOLOGY_OPTIONS } from "@/features/technologies/constants";
 
 interface LearningLogFormProps {
   defaultStudiedAt: string;
+  learningLog?: {
+    id: string;
+    title: string;
+    content: string;
+    studiedAt: string;
+    studyMinutes: number;
+    category: LearningCategoryValue;
+    technologyNames: string[];
+  };
 }
 
-export function LearningLogForm({ defaultStudiedAt }: LearningLogFormProps) {
-  const [state, formAction, pending] = useActionState(
-    createLearningLogAction,
-    {},
-  );
+export function LearningLogForm({
+  defaultStudiedAt,
+  learningLog,
+}: LearningLogFormProps) {
+  const action = learningLog
+    ? updateLearningLogAction.bind(null, learningLog.id)
+    : createLearningLogAction;
+  const [state, formAction, pending] = useActionState(action, {});
   const technologyError = state.fieldErrors?.technologyNames?.[0];
+  const studyHours = learningLog
+    ? Math.floor(learningLog.studyMinutes / 60)
+    : 0;
+  const studyMinutesPart = learningLog ? learningLog.studyMinutes % 60 : 30;
 
   return (
     <form action={formAction}>
       <Card className="overflow-hidden">
         <CardHeader className="border-b border-border">
-          <CardTitle>학습 기록</CardTitle>
+          <CardTitle>
+            {learningLog ? "학습 기록 수정" : "학습 기록"}
+          </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-6 pt-5 sm:pt-6">
           <div className="grid gap-5 sm:grid-cols-2">
             <Input
-              defaultValue={defaultStudiedAt}
+              defaultValue={learningLog?.studiedAt ?? defaultStudiedAt}
               error={state.fieldErrors?.studiedAt?.[0]}
               id="studiedAt"
               label="학습 날짜"
@@ -46,24 +72,24 @@ export function LearningLogForm({ defaultStudiedAt }: LearningLogFormProps) {
               type="date"
             />
             <Select
-              defaultValue="OTHER"
+              defaultValue={learningLog?.category ?? "OTHER"}
               error={state.fieldErrors?.category?.[0]}
               id="category"
               label="카테고리"
               name="category"
               required
             >
-              <option value="LANGUAGE">프로그래밍 언어</option>
-              <option value="FRAMEWORK">프레임워크·라이브러리</option>
-              <option value="ALGORITHM">알고리즘·자료구조</option>
-              <option value="DATABASE">데이터베이스</option>
-              <option value="DEVOPS">DevOps·인프라</option>
-              <option value="OTHER">기타</option>
+              {LEARNING_CATEGORY_VALUES.map((category) => (
+                <option key={category} value={category}>
+                  {LEARNING_CATEGORY_LABELS[category]}
+                </option>
+              ))}
             </Select>
           </div>
 
           <Input
             autoComplete="off"
+            defaultValue={learningLog?.title}
             error={state.fieldErrors?.title?.[0]}
             id="learning-title"
             label="학습 제목"
@@ -74,6 +100,7 @@ export function LearningLogForm({ defaultStudiedAt }: LearningLogFormProps) {
           />
 
           <Textarea
+            defaultValue={learningLog?.content}
             error={state.fieldErrors?.content?.[0]}
             id="learning-content"
             label="학습 내용"
@@ -93,7 +120,7 @@ export function LearningLogForm({ defaultStudiedAt }: LearningLogFormProps) {
             </p>
             <div className="mt-3 grid gap-5 sm:grid-cols-2">
               <Input
-                defaultValue="0"
+                defaultValue={studyHours}
                 error={state.fieldErrors?.studyHours?.[0]}
                 id="studyHours"
                 label="시간"
@@ -104,7 +131,7 @@ export function LearningLogForm({ defaultStudiedAt }: LearningLogFormProps) {
                 type="number"
               />
               <Input
-                defaultValue="30"
+                defaultValue={studyMinutesPart}
                 error={state.fieldErrors?.studyMinutesPart?.[0]}
                 id="studyMinutesPart"
                 label="분"
@@ -136,6 +163,9 @@ export function LearningLogForm({ defaultStudiedAt }: LearningLogFormProps) {
                 >
                   <input
                     className="size-4 accent-primary"
+                    defaultChecked={learningLog?.technologyNames.includes(
+                      technology,
+                    )}
                     name="technologyNames"
                     type="checkbox"
                     value={technology}
@@ -165,11 +195,14 @@ export function LearningLogForm({ defaultStudiedAt }: LearningLogFormProps) {
           ) : null}
         </CardContent>
         <CardFooter>
-          <ButtonLink href="/learning" variant="outline">
+          <ButtonLink
+            href={learningLog ? `/learning/${learningLog.id}` : "/learning"}
+            variant="outline"
+          >
             취소
           </ButtonLink>
           <Button loading={pending} loadingLabel="저장 중" type="submit">
-            학습 기록 저장
+            {learningLog ? "변경사항 저장" : "학습 기록 저장"}
           </Button>
         </CardFooter>
       </Card>

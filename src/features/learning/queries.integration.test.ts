@@ -15,6 +15,7 @@ describeWithDatabase("learning queries database integration", () => {
   let otherUserId = "";
   let newestOwnerLogId = "";
   let otherUserLogId = "";
+  let createdNextTechnology = false;
 
   beforeAll(async () => {
     const [owner, otherUser] = await Promise.all([
@@ -70,16 +71,50 @@ describeWithDatabase("learning queries database integration", () => {
     newestOwnerLogId = newestOwnerLog.id;
     otherUserLogId = otherUserLog.id;
     expect(olderOwnerLog.id).toBeTruthy();
+
+    const existingTechnology = await prisma.technology.findUnique({
+      where: { name: "Next.js" },
+      select: { id: true },
+    });
+    const technology = await prisma.technology.upsert({
+      where: { name: "Next.js" },
+      create: { name: "Next.js" },
+      update: {},
+      select: { id: true },
+    });
+    createdNextTechnology = !existingTechnology;
+    await prisma.learningLogTechnology.create({
+      data: {
+        learningLogId: newestOwnerLogId,
+        technologyId: technology.id,
+      },
+    });
   });
 
   afterAll(async () => {
     await prisma.user.deleteMany({
       where: { id: { in: [ownerId, otherUserId].filter(Boolean) } },
     });
+    if (createdNextTechnology) {
+      await prisma.technology.deleteMany({
+        where: {
+          name: "Next.js",
+          projects: { none: {} },
+          learningLogs: { none: {} },
+        },
+      });
+    }
   });
 
   it("returns only owned records in latest study order", async () => {
-    const result = await listLearningLogs(ownerId, 1);
+    const result = await listLearningLogs(ownerId, {
+      query: "",
+      fromDate: undefined,
+      toDate: undefined,
+      category: undefined,
+      technology: undefined,
+      page: 1,
+    });
 
     expect(result.totalItems).toBe(2);
     expect(result.items.map(({ title }) => title)).toEqual([
@@ -96,5 +131,24 @@ describeWithDatabase("learning queries database integration", () => {
     await expect(
       getLearningLogDetail(ownerId, otherUserLogId),
     ).resolves.toBeNull();
+  });
+
+  it("combines search, date, category, and technology filters", async () => {
+    const result = await listLearningLogs(ownerId, {
+      query: "최신",
+      fromDate: "2026-10-08",
+      toDate: "2026-10-08",
+      category: "FRAMEWORK",
+      technology: "Next.js",
+      page: 1,
+    });
+
+    expect(result.totalItems).toBe(1);
+    expect(result.items[0]).toEqual(
+      expect.objectContaining({
+        id: newestOwnerLogId,
+        technologyNames: ["Next.js"],
+      }),
+    );
   });
 });

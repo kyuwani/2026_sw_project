@@ -15,15 +15,67 @@ export const LEARNING_CATEGORY_VALUES = [
 const firstSearchParamValue = (value: unknown) =>
   Array.isArray(value) ? value[0] : value;
 
-export const learningLogListSearchParamsSchema = z.object({
-  page: z
+const optionalFilterTextSchema = (maxLength: number) =>
+  z
     .preprocess(
       firstSearchParamValue,
-      z.coerce.number().int().positive().max(10_000).optional(),
+      z.string().trim().max(maxLength).optional(),
     )
-    .catch(1)
-    .transform((page) => page ?? 1),
-});
+    .catch(undefined);
+
+const optionalFilterDateSchema = z
+  .preprocess(
+    firstSearchParamValue,
+    z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .refine(isValidDateInput)
+      .optional(),
+  )
+  .catch(undefined);
+
+const optionalCategoryFilterSchema = z
+  .preprocess(
+    (value) => {
+      const firstValue = firstSearchParamValue(value);
+      return firstValue === "ALL" ? undefined : firstValue;
+    },
+    z.enum(LEARNING_CATEGORY_VALUES).optional(),
+  )
+  .catch(undefined);
+
+const optionalTechnologyFilterSchema = z
+  .preprocess(
+    (value) => {
+      const firstValue = firstSearchParamValue(value);
+      return firstValue === "ALL" ? undefined : firstValue;
+    },
+    z.enum(TECHNOLOGY_OPTIONS).optional(),
+  )
+  .catch(undefined);
+
+export const learningLogListSearchParamsSchema = z
+  .object({
+    q: optionalFilterTextSchema(100),
+    from: optionalFilterDateSchema,
+    to: optionalFilterDateSchema,
+    category: optionalCategoryFilterSchema,
+    technology: optionalTechnologyFilterSchema,
+    page: z
+      .preprocess(
+        firstSearchParamValue,
+        z.coerce.number().int().positive().max(10_000).optional(),
+      )
+      .catch(1),
+  })
+  .transform(({ q, from, to, category, technology, page }) => ({
+    query: q ?? "",
+    fromDate: from,
+    toDate: to,
+    category,
+    technology,
+    page: page ?? 1,
+  }));
 
 export const learningLogIdSchema = z.uuid(
   "올바르지 않은 학습 기록입니다.",
@@ -135,6 +187,9 @@ export type LearningLogInput = z.output<
   ReturnType<typeof createLearningLogInputSchema>
 >;
 export type LearningCategoryValue = (typeof LEARNING_CATEGORY_VALUES)[number];
+export type LearningLogListFilters = z.infer<
+  typeof learningLogListSearchParamsSchema
+>;
 export type LearningLogField =
   | "title"
   | "content"
@@ -147,4 +202,8 @@ export type LearningLogField =
 export interface LearningLogFormActionState {
   message?: string;
   fieldErrors?: Partial<Record<LearningLogField, string[]>>;
+}
+
+export interface DeleteLearningLogActionState {
+  message?: string;
 }

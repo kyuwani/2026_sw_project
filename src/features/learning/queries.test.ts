@@ -79,14 +79,35 @@ describe("learning queries", () => {
       learningLogRecord,
     ]);
 
-    const result = await listLearningLogs("user-id", 2);
+    const result = await listLearningLogs("user-id", {
+      query: "Next",
+      fromDate: "2026-10-01",
+      toDate: "2026-10-31",
+      category: "FRAMEWORK",
+      technology: "Next.js",
+      page: 2,
+    });
 
     expect(prisma.learningLog.count).toHaveBeenCalledWith({
-      where: { userId: "user-id" },
+      where: expect.objectContaining({
+        userId: "user-id",
+        category: "FRAMEWORK",
+        studiedAt: {
+          gte: new Date("2026-10-01T00:00:00.000Z"),
+          lte: new Date("2026-10-31T00:00:00.000Z"),
+        },
+        technologies: {
+          some: { technology: { name: "Next.js" } },
+        },
+        OR: [
+          { title: { contains: "Next", mode: "insensitive" } },
+          { content: { contains: "Next", mode: "insensitive" } },
+        ],
+      }),
     });
     expect(prisma.learningLog.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { userId: "user-id" },
+        where: expect.objectContaining({ userId: "user-id" }),
         orderBy: [{ studiedAt: "desc" }, { createdAt: "desc" }],
         skip: LEARNING_LOG_PAGE_SIZE,
         take: LEARNING_LOG_PAGE_SIZE,

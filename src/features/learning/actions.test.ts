@@ -2,9 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createLearningLogAction } from "./actions";
+import {
+  createLearningLogAction,
+  deleteLearningLogAction,
+  updateLearningLogAction,
+} from "./actions";
 import { getUserTimeZone } from "./queries";
 import { createLearningLog } from "./services/create-learning-log";
+import { deleteLearningLog } from "./services/delete-learning-log";
+import { updateLearningLog } from "./services/update-learning-log";
 
 const authMock = vi.hoisted(() => vi.fn());
 
@@ -12,6 +18,12 @@ vi.mock("@/auth", () => ({ auth: authMock }));
 vi.mock("./queries", () => ({ getUserTimeZone: vi.fn() }));
 vi.mock("./services/create-learning-log", () => ({
   createLearningLog: vi.fn(),
+}));
+vi.mock("./services/delete-learning-log", () => ({
+  deleteLearningLog: vi.fn(),
+}));
+vi.mock("./services/update-learning-log", () => ({
+  updateLearningLog: vi.fn(),
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
@@ -28,6 +40,8 @@ function createValidFormData(): FormData {
   formData.append("technologyNames", "TypeScript");
   return formData;
 }
+
+const learningLogId = "550e8400-e29b-41d4-a716-446655440000";
 
 describe("learning log actions", () => {
   beforeEach(() => {
@@ -86,5 +100,82 @@ describe("learning log actions", () => {
       "미래 날짜에는 학습 기록을 작성할 수 없습니다.",
     );
     expect(createLearningLog).not.toHaveBeenCalled();
+  });
+
+  it("updates only with the authenticated user's ID", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "user-id" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+    vi.mocked(getUserTimeZone).mockResolvedValue("Asia/Seoul");
+    vi.mocked(updateLearningLog).mockResolvedValue(true);
+
+    await updateLearningLogAction(
+      learningLogId,
+      {},
+      createValidFormData(),
+    );
+
+    expect(updateLearningLog).toHaveBeenCalledWith(
+      "user-id",
+      learningLogId,
+      expect.objectContaining({ title: "Next.js 폼 학습" }),
+    );
+    expect(revalidatePath).toHaveBeenCalledWith("/learning");
+    expect(revalidatePath).toHaveBeenCalledWith(
+      `/learning/${learningLogId}`,
+    );
+    expect(redirect).toHaveBeenCalledWith(
+      `/learning/${learningLogId}?updated=1`,
+    );
+  });
+
+  it("returns a safe error when update ownership fails", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "other-user" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+    vi.mocked(getUserTimeZone).mockResolvedValue("Asia/Seoul");
+    vi.mocked(updateLearningLog).mockResolvedValue(false);
+
+    await expect(
+      updateLearningLogAction(
+        learningLogId,
+        {},
+        createValidFormData(),
+      ),
+    ).resolves.toEqual({
+      message: "학습 기록을 찾을 수 없거나 수정 권한이 없습니다.",
+    });
+    expect(redirect).not.toHaveBeenCalled();
+  });
+
+  it("deletes only with the authenticated user's ID", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "user-id" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+    vi.mocked(deleteLearningLog).mockResolvedValue(true);
+
+    await deleteLearningLogAction(learningLogId, {}, new FormData());
+
+    expect(deleteLearningLog).toHaveBeenCalledWith("user-id", learningLogId);
+    expect(revalidatePath).toHaveBeenCalledWith("/learning");
+    expect(redirect).toHaveBeenCalledWith("/learning?deleted=1");
+  });
+
+  it("does not delete another user's learning log", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "other-user" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+    vi.mocked(deleteLearningLog).mockResolvedValue(false);
+
+    await expect(
+      deleteLearningLogAction(learningLogId, {}, new FormData()),
+    ).resolves.toEqual({
+      message: "학습 기록을 찾을 수 없거나 삭제 권한이 없습니다.",
+    });
+    expect(redirect).not.toHaveBeenCalled();
   });
 });

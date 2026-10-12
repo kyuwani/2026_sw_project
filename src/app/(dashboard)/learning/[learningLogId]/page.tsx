@@ -1,12 +1,20 @@
-import { ArrowLeft, CalendarDays, Clock3 } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  Pencil,
+} from "lucide-react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { z } from "zod";
 
 import { auth } from "@/auth";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { DeleteLearningLogDialog } from "@/features/learning/components/delete-learning-log-dialog";
 import {
   formatLearningDate,
   formatStudyDuration,
@@ -19,10 +27,14 @@ export const metadata: Metadata = { title: "학습 기록 상세" };
 
 interface LearningLogDetailPageProps {
   params: Promise<{ learningLogId: string }>;
+  searchParams: Promise<{ updated?: string | string[] }>;
 }
+
+const successSearchParamSchema = z.literal("1");
 
 export default async function LearningLogDetailPage({
   params,
+  searchParams,
 }: LearningLogDetailPageProps) {
   const session = await auth();
 
@@ -45,6 +57,10 @@ export default async function LearningLogDetailPage({
     notFound();
   }
 
+  const updated = successSearchParamSchema.safeParse(
+    (await searchParams).updated,
+  ).success;
+
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       <ButtonLink href="/learning" size="sm" variant="ghost">
@@ -56,11 +72,39 @@ export default async function LearningLogDetailPage({
         title={learningLog.title}
         description="학습한 내용과 관련 기술을 자세히 확인합니다."
         action={
-          <Badge variant="primary">
-            {LEARNING_CATEGORY_LABELS[learningLog.category]}
-          </Badge>
+          <div className="flex flex-wrap items-center gap-3">
+            <Badge variant="primary">
+              {LEARNING_CATEGORY_LABELS[learningLog.category]}
+            </Badge>
+            <ButtonLink
+              href={`/learning/${learningLog.id}/edit`}
+              variant="outline"
+            >
+              <Pencil aria-hidden="true" className="size-4" />
+              수정
+            </ButtonLink>
+          </div>
         }
       />
+
+      {updated ? (
+        <Card className="border-success/30 bg-success-soft shadow-none">
+          <CardContent className="flex items-start gap-3 py-5 sm:py-6">
+            <CheckCircle2
+              aria-hidden="true"
+              className="mt-0.5 size-5 shrink-0 text-success"
+            />
+            <div>
+              <p className="font-semibold text-foreground">
+                학습 기록을 수정했습니다.
+              </p>
+              <p className="mt-1 text-sm leading-6 text-muted">
+                변경한 내용과 기술 스택이 반영되었습니다.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <section aria-label="학습 요약" className="grid gap-4 sm:grid-cols-2">
         <Card>
@@ -112,6 +156,18 @@ export default async function LearningLogDetailPage({
           ) : (
             <p className="text-sm text-muted">등록된 기술이 없습니다.</p>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-destructive/30 shadow-none">
+        <CardHeader>
+          <CardTitle>위험 영역</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DeleteLearningLogDialog
+            learningLogId={learningLog.id}
+            learningLogTitle={learningLog.title}
+          />
         </CardContent>
       </Card>
     </div>

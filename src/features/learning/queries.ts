@@ -3,7 +3,10 @@ import "server-only";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { isValidTimeZone } from "@/lib/date/time-zone";
-import type { LearningCategoryValue } from "./schemas";
+import type {
+  LearningCategoryValue,
+  LearningLogListFilters,
+} from "./schemas";
 
 export const LEARNING_LOG_PAGE_SIZE = 6;
 
@@ -74,14 +77,42 @@ export async function getUserTimeZone(userId: string): Promise<string | null> {
 
 export async function listLearningLogs(
   userId: string,
-  page: number,
+  filters: LearningLogListFilters,
 ): Promise<LearningLogPage> {
+  const studiedAt =
+    filters.fromDate || filters.toDate
+      ? {
+          gte: filters.fromDate
+            ? new Date(`${filters.fromDate}T00:00:00.000Z`)
+            : undefined,
+          lte: filters.toDate
+            ? new Date(`${filters.toDate}T00:00:00.000Z`)
+            : undefined,
+        }
+      : undefined;
+  const where = {
+    userId,
+    studiedAt,
+    category: filters.category,
+    technologies: filters.technology
+      ? {
+          some: { technology: { name: filters.technology } },
+        }
+      : undefined,
+    OR: filters.query
+      ? [
+          { title: { contains: filters.query, mode: "insensitive" as const } },
+          { content: { contains: filters.query, mode: "insensitive" as const } },
+        ]
+      : undefined,
+  } satisfies Prisma.LearningLogWhereInput;
+
   const [totalItems, learningLogs] = await Promise.all([
-    prisma.learningLog.count({ where: { userId } }),
+    prisma.learningLog.count({ where }),
     prisma.learningLog.findMany({
-      where: { userId },
+      where,
       orderBy: [{ studiedAt: "desc" }, { createdAt: "desc" }],
-      skip: (page - 1) * LEARNING_LOG_PAGE_SIZE,
+      skip: (filters.page - 1) * LEARNING_LOG_PAGE_SIZE,
       take: LEARNING_LOG_PAGE_SIZE,
       select: learningLogSummarySelect,
     }),
@@ -89,7 +120,7 @@ export async function listLearningLogs(
 
   return {
     items: learningLogs.map(toLearningLogSummary),
-    page,
+    page: filters.page,
     pageSize: LEARNING_LOG_PAGE_SIZE,
     totalItems,
     totalPages: Math.max(1, Math.ceil(totalItems / LEARNING_LOG_PAGE_SIZE)),

@@ -83,13 +83,50 @@ describe("createLearningLogInputSchema", () => {
 
 describe("learning log route schemas", () => {
   it("normalizes a valid list page and falls back for invalid input", () => {
+    expect(learningLogListSearchParamsSchema.parse({ page: "3" })).toEqual({
+      query: "",
+      fromDate: undefined,
+      toDate: undefined,
+      category: undefined,
+      technology: undefined,
+      page: 3,
+    });
     expect(
-      learningLogListSearchParamsSchema.parse({ page: "3" }),
-    ).toEqual({ page: 3 });
+      learningLogListSearchParamsSchema.parse({ page: ["-1", "2"] }).page,
+    ).toBe(1);
+    expect(learningLogListSearchParamsSchema.parse({}).page).toBe(1);
+  });
+
+  it("validates and normalizes combined learning log filters", () => {
     expect(
-      learningLogListSearchParamsSchema.parse({ page: ["-1", "2"] }),
-    ).toEqual({ page: 1 });
-    expect(learningLogListSearchParamsSchema.parse({})).toEqual({ page: 1 });
+      learningLogListSearchParamsSchema.parse({
+        q: "  next  ",
+        from: "2026-10-01",
+        to: "2026-10-31",
+        category: "FRAMEWORK",
+        technology: "Next.js",
+      }),
+    ).toEqual({
+      query: "next",
+      fromDate: "2026-10-01",
+      toDate: "2026-10-31",
+      category: "FRAMEWORK",
+      technology: "Next.js",
+      page: 1,
+    });
+
+    const invalid = learningLogListSearchParamsSchema.parse({
+      from: "2026-02-30",
+      category: "INVALID",
+      technology: "Unknown",
+    });
+    expect(invalid).toEqual(
+      expect.objectContaining({
+        fromDate: undefined,
+        category: undefined,
+        technology: undefined,
+      }),
+    );
   });
 
   it("accepts only UUID learning log IDs", () => {
