@@ -17,7 +17,9 @@
 
 개발 환경에서는 Docker `postgres:17-alpine` 컨테이너 `devlog-postgres`를 사용한다. 포트는 `127.0.0.1:5432`에만 바인딩하고, 개발 전용 trust 인증을 사용하므로 이 설정을 Production에 재사용하지 않는다. 연결 문자열과 개발용 `AUTH_SECRET`은 Git에서 제외되는 `.env.local`에 저장한다.
 
-2026-09-29에 인증 모델을 포함한 초기 migration `20260929071200_init`을 생성·적용했다. Prisma Client 생성, Schema validation과 실제 테이블 생성을 확인했다. GitHub OAuth 자격 증명은 로컬 `.env.local`에만 설정했으며, callback과 계정 연결을 검증했다.
+2026-09-29에 인증 모델을 포함한 초기 migration `20260929071200_init`을 생성·적용했다. 2026-10-12에는 GitHub Repository 캐시와 Profile migration까지 로컬 DB에 적용했다. Prisma Client 생성, Schema validation과 실제 테이블 생성을 확인했다. GitHub OAuth 자격 증명은 로컬 `.env.local`에만 설정했으며, callback과 계정 연결을 검증했다.
+
+DB 통합 테스트는 로컬 PostgreSQL을 기동하고 migration을 적용한 뒤 `npm run test:integration`으로 실행한다. 실행 스크립트는 Git에서 제외된 `.env.local`을 로드하고 `RUN_DB_TESTS=1`을 테스트 프로세스에만 전달한다. 각 테스트는 UUID 기반 고유 데이터를 만들고 종료 시 사용자 및 고립된 기술 데이터를 정리한다. Project와 LearningLog 생성 중 FK 실패를 의도적으로 발생시키는 테스트로 같은 transaction에서 먼저 생성된 Technology도 rollback되는지 확인한다.
 
 ## 3. 설계 원칙
 

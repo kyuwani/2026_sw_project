@@ -13,10 +13,19 @@ describeWithDatabase("createLearningLog database integration", () => {
   const suffix = randomUUID();
   const email = `learning-log-test-${suffix}@example.invalid`;
   const technologyNames = ["Next.js", "TypeScript"] as const;
+  const rollbackTechnologyName = "Node.js" as const;
   let userId = "";
   let createdTechnologyNames: string[] = [];
 
   beforeAll(async () => {
+    await prisma.technology.deleteMany({
+      where: {
+        name: rollbackTechnologyName,
+        projects: { none: {} },
+        learningLogs: { none: {} },
+      },
+    });
+
     const existingTechnologies = await prisma.technology.findMany({
       where: { name: { in: [...technologyNames] } },
       select: { name: true },
@@ -42,7 +51,7 @@ describeWithDatabase("createLearningLog database integration", () => {
 
     await prisma.technology.deleteMany({
       where: {
-        name: { in: createdTechnologyNames },
+        name: { in: [...createdTechnologyNames, rollbackTechnologyName] },
         projects: { none: {} },
         learningLogs: { none: {} },
       },
@@ -82,5 +91,31 @@ describeWithDatabase("createLearningLog database integration", () => {
     expect(
       learningLog?.technologies.map(({ technology }) => technology.name),
     ).toEqual(["Next.js", "TypeScript"]);
+  });
+
+  it("rolls back technology creation when the learning log write fails", async () => {
+    const missingUserId = randomUUID();
+    const title = `rollback-learning-${suffix}`;
+
+    await expect(
+      createLearningLog(missingUserId, {
+        title,
+        content: "transaction rollback 검증",
+        studiedAt: new Date("2026-10-08T00:00:00.000Z"),
+        studyMinutes: 30,
+        category: "OTHER",
+        technologyNames: [rollbackTechnologyName],
+      }),
+    ).rejects.toBeDefined();
+
+    const [learningLogCount, technology] = await Promise.all([
+      prisma.learningLog.count({ where: { title } }),
+      prisma.technology.findUnique({
+        where: { name: rollbackTechnologyName },
+      }),
+    ]);
+
+    expect(learningLogCount).toBe(0);
+    expect(technology).toBeNull();
   });
 });

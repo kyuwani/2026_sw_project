@@ -448,11 +448,15 @@ DB 연결 후 후속 확인:
 
 ### Day 24 — 핵심 통합 테스트
 
+상태: **완료** (2026-10-12)
+
 작업:
 
 - Prisma 기반 Project·Task 통합 테스트
 - 학습 기록과 집계 통합 테스트
 - transaction 실패 시나리오
+- 로컬 DB 최신 migration 적용과 단일 통합 테스트 명령 추가
+- Project·LearningLog 생성 실패 시 Technology 생성 rollback 검증
 
 완료 조건:
 
