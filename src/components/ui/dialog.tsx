@@ -5,6 +5,7 @@ import {
   useEffect,
   useId,
   useRef,
+  type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
 } from "react";
@@ -39,6 +40,7 @@ export function Dialog({
   className,
 }: DialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
   const descriptionId = useId();
 
@@ -50,11 +52,47 @@ export function Dialog({
     }
 
     if (open && !dialog.open) {
+      returnFocusRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
       dialog.showModal();
     } else if (!open && dialog.open) {
       dialog.close();
+      returnFocusRef.current?.focus();
+      returnFocusRef.current = null;
     }
   }, [open]);
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDialogElement>) {
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const focusableElements = event.currentTarget.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+
+    if (!focusableElements.length) {
+      event.preventDefault();
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (
+      event.shiftKey &&
+      (document.activeElement === firstElement ||
+        document.activeElement === event.currentTarget)
+    ) {
+      event.preventDefault();
+      lastElement.focus();
+    } else if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  }
 
   function handleBackdropClick(event: MouseEvent<HTMLDialogElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -89,6 +127,7 @@ export function Dialog({
         }
       }}
       onClick={handleBackdropClick}
+      onKeyDown={handleKeyDown}
     >
       <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
         <div>

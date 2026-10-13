@@ -40,10 +40,10 @@ export default async function ProfilePage() {
         description="공개 정보와 집계 기준, 연결된 계정을 관리합니다."
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <ProfileForm profile={profile} />
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>프로필 미리보기</CardTitle>
@@ -115,9 +115,9 @@ export default async function ProfilePage() {
               <div className="flex items-center justify-between gap-4 rounded-control border border-border px-3.5 py-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <GitBranch aria-hidden="true" className="size-5 shrink-0" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-semibold">GitHub</p>
-                    <p className="mt-0.5 text-xs text-muted">
+                    <p className="mt-0.5 break-words text-xs text-muted">
                       {profile.githubConnected
                         ? "OAuth 계정이 연결되어 있습니다."
                         : "연결된 OAuth 계정이 없습니다."}

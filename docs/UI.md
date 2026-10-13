@@ -393,6 +393,8 @@ Day 18부터 이번 주, 이번 달과 최대 366일의 사용자 지정 기간�
 - `prefers-reduced-motion` 존중
 - 최소 터치 영역 확보
 
+Day 26부터 Playwright와 axe를 사용해 회원가입, Project 생성·삭제 Dialog와 모바일 메뉴의 접근성을 자동 검증한다. Project 생성은 Tab, 문자 입력, 방향키, Space와 Enter만으로 완료되는지 확인한다. Dialog와 모바일 메뉴는 열린 직후 포커스 이동, Tab 순환, Escape 닫기와 실행 요소로의 포커스 복귀를 검증한다. Dashboard, Projects, Tasks, Learning, Analytics, Profile은 360×800, 768×1024, 1440×900 viewport에서 의도하지 않은 문서 가로 스크롤이 없는지 확인한다.
+
 ## 15. 화면 상태 체크리스트
 
 각 주요 화면은 다음 상태를 설계한다.

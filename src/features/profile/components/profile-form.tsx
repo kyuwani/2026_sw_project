@@ -48,8 +48,8 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   );
 
   return (
-    <form action={formAction}>
-      <Card>
+    <form action={formAction} className="min-w-0">
+      <Card className="min-w-0">
         <CardHeader className="border-b border-border">
           <CardTitle>프로필 정보</CardTitle>
         </CardHeader>
@@ -107,6 +107,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           </div>
 
           <fieldset
+            className="min-w-0"
             aria-describedby={
               state.fieldErrors?.primaryTechnologies
                 ? "primaryTechnologies-error"
