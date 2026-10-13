@@ -21,6 +21,8 @@
 
 DB 통합 테스트는 로컬 PostgreSQL을 기동하고 migration을 적용한 뒤 `npm run test:integration`으로 실행한다. 실행 스크립트는 Git에서 제외된 `.env.local`을 로드하고 `RUN_DB_TESTS=1`을 테스트 프로세스에만 전달한다. 각 테스트는 UUID 기반 고유 데이터를 만들고 종료 시 사용자 및 고립된 기술 데이터를 정리한다. Project와 LearningLog 생성 중 FK 실패를 의도적으로 발생시키는 테스트로 같은 transaction에서 먼저 생성된 Technology도 rollback되는지 확인한다.
 
+브라우저 E2E 테스트는 `npm run test:e2e`로 실행한다. 테스트마다 UUID 기반 이메일로 사용자를 가입시키고 실제 UI에서 로그인, Project·Task·LearningLog 생성과 Dashboard 반영을 검증한다. 테스트 종료 시 해당 사용자를 삭제하며 cascade 정책으로 연관 데이터를 정리하고, 다른 관계가 없는 테스트 기술 데이터만 추가로 삭제한다.
+
 ## 3. 설계 원칙
 
 - 기본 키는 PostgreSQL UUID를 사용한다.

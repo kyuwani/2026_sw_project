@@ -47,8 +47,8 @@ Data access layer
 | Authentication | Auth.js | 세션, GitHub OAuth, 인증 엔드포인트 |
 | Chart | Recharts | Analytics 시각화 |
 | Icons | Lucide React | 일관된 아이콘 |
-| Unit/Integration test | Vitest 후보 | 비즈니스 로직과 데이터 검증 |
-| E2E test | Playwright 후보 | 핵심 사용자 흐름 검증 |
+| Unit/Integration test | Vitest | 비즈니스 로직과 데이터 검증 |
+| E2E test | Playwright | Chromium 기반 핵심 사용자 흐름 검증 |
 | Deployment | Vercel | Preview 및 Production 배포 |
 | Database hosting | 미정 | 연결 풀링과 백업을 지원하는 PostgreSQL 선택 |
 
