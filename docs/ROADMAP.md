@@ -525,12 +525,16 @@ DB 연결 후 후속 확인:
 
 ### Day 28 — Production 배포 준비
 
+상태: **완료** (2026-10-13)
+
 작업:
 
 - Production DB와 migration 절차
 - Vercel 환경 변수
 - OAuth callback URL
 - Preview와 Production 환경 구분
+- 배포 환경변수 preflight와 migration status/deploy 명령
+- 환경별 배포 체크리스트 문서화
 
 완료 조건:
 

@@ -13,7 +13,8 @@
 - Schema: `prisma/schema.prisma`
 - Generated Client: `src/generated/prisma` (Git 추적 제외, `prisma generate`로 생성)
 - 공통 Client: `src/lib/db/prisma.ts`
-- 연결 환경변수: `DATABASE_URL`
+- runtime 연결 환경변수: `DATABASE_URL`
+- migration 연결 환경변수: `DIRECT_URL` (미설정 시 Local `DATABASE_URL` 사용)
 
 개발 환경에서는 Docker `postgres:17-alpine` 컨테이너 `devlog-postgres`를 사용한다. 포트는 `127.0.0.1:5432`에만 바인딩하고, 개발 전용 trust 인증을 사용하므로 이 설정을 Production에 재사용하지 않는다. 연결 문자열과 개발용 `AUTH_SECRET`은 Git에서 제외되는 `.env.local`에 저장한다.
 
@@ -305,6 +306,8 @@ Day 27 조회 점검에서는 Dashboard 프로젝트 상태 집계가 `Project(u
 - Day 21 migration `20261012070000_add_user_profile`에서 User 프로필 필드와 UserTechnology를 추가했다.
 - 로컬 PostgreSQL에서 Auth.js 및 도메인 테이블 10개와 `_prisma_migrations` 생성을 확인했다.
 - Production에서는 `prisma migrate dev`를 실행하지 않는다.
+- Preview와 Production migration은 direct `DIRECT_URL`로 `npm run db:migrate:deploy`를 한 번 실행하며 Vercel build 단계에는 포함하지 않는다.
+- 상세한 환경 분리와 적용 순서는 `docs/DEPLOYMENT.md`를 따른다.
 - Day 4에는 seed를 구현하지 않았다.
 - 추후 seed는 `prisma/seed.ts`에 두고 Technology를 `upsert`해 반복 실행 시 중복이 생기지 않도록 구성할 수 있다.
 

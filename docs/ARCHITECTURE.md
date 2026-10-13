@@ -343,7 +343,8 @@ Profile 조회는 User와 GitHub Account 연결 여부, 순서가 있는 UserTec
 ## 13. 배포 구조
 
 - Vercel Preview와 Production 환경을 분리한다.
-- DB migration은 애플리케이션 요청 중 자동 실행하지 않는다.
-- Production 배포 전 migration 적용 절차를 별도로 둔다.
-- Preview DB 전략은 DB 호스팅 업체 결정 후 문서화한다.
-- OAuth callback URL을 Local, Preview, Production 환경별로 관리한다.
+- DB migration은 애플리케이션 요청이나 Vercel build 중 자동 실행하지 않는다.
+- runtime은 pooled `DATABASE_URL`, migration은 direct `DIRECT_URL`을 사용한다.
+- Preview와 Production은 DB, `AUTH_SECRET`과 GitHub OAuth App을 공유하지 않는다.
+- OAuth callback URL은 Local과 환경별 고정 host로 관리한다.
+- 구체적인 적용 순서와 점검표는 `docs/DEPLOYMENT.md`를 따른다.
