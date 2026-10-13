@@ -120,9 +120,7 @@ export async function getDashboardData(
   const weekEnd = addUtcDays(weekStart, 6);
 
   const [
-    totalProjects,
-    inProgressProjects,
-    completedProjects,
+    projectCounts,
     completedTasks,
     weeklyLearningLogs,
     studiedDates,
@@ -132,9 +130,11 @@ export async function getDashboardData(
     recentProjectActivities,
     recentCompletedTasks,
   ] = await Promise.all([
-    prisma.project.count({ where: { userId } }),
-    prisma.project.count({ where: { userId, status: "IN_PROGRESS" } }),
-    prisma.project.count({ where: { userId, status: "COMPLETED" } }),
+    prisma.project.groupBy({
+      by: ["status"],
+      where: { userId },
+      _count: { _all: true },
+    }),
     prisma.task.count({
       where: { status: "DONE", project: { userId } },
     }),
@@ -215,6 +215,16 @@ export async function getDashboardData(
       },
     }),
   ]);
+
+  const projectCountByStatus = new Map(
+    projectCounts.map(({ status, _count }) => [status, _count._all]),
+  );
+  const totalProjects = projectCounts.reduce(
+    (total, { _count }) => total + _count._all,
+    0,
+  );
+  const inProgressProjects = projectCountByStatus.get("IN_PROGRESS") ?? 0;
+  const completedProjects = projectCountByStatus.get("COMPLETED") ?? 0;
 
   const weeklyMinutesByDate = new Map<string, number>();
   for (const learningLog of weeklyLearningLogs) {

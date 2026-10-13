@@ -7,7 +7,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
     user: { findUnique: vi.fn() },
-    project: { count: vi.fn(), findMany: vi.fn() },
+    project: { groupBy: vi.fn(), findMany: vi.fn() },
     task: { count: vi.fn(), findMany: vi.fn() },
     learningLog: { findMany: vi.fn() },
   },
@@ -39,6 +39,43 @@ const learningLogBase = {
   updatedAt: new Date("2026-10-12T01:00:00.000Z"),
 };
 
+function projectGroupRecord(
+  status: "IN_PROGRESS" | "COMPLETED",
+  count: number,
+) {
+  const date = new Date("2026-10-12T00:00:00.000Z");
+
+  return {
+    id: "",
+    title: "",
+    description: null,
+    status,
+    startDate: null,
+    endDate: null,
+    repositoryUrl: null,
+    repositoryId: null,
+    userId: "user-id",
+    createdAt: date,
+    updatedAt: date,
+    _count: {
+      id: count,
+      title: count,
+      description: count,
+      status: count,
+      startDate: count,
+      endDate: count,
+      repositoryUrl: count,
+      repositoryId: count,
+      userId: count,
+      createdAt: count,
+      updatedAt: count,
+      _all: count,
+    },
+    _min: undefined,
+    _max: undefined,
+  };
+}
+
 describe("getDashboardData", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -46,10 +83,10 @@ describe("getDashboardData", () => {
 
   it("returns user-scoped dashboard aggregates and DTOs", async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(userRecord);
-    vi.mocked(prisma.project.count)
-      .mockResolvedValueOnce(3)
-      .mockResolvedValueOnce(2)
-      .mockResolvedValueOnce(1);
+    vi.mocked(prisma.project.groupBy).mockResolvedValue([
+      projectGroupRecord("IN_PROGRESS", 2),
+      projectGroupRecord("COMPLETED", 1),
+    ]);
     vi.mocked(prisma.task.count).mockResolvedValue(5);
     vi.mocked(prisma.learningLog.findMany)
       .mockResolvedValueOnce([
@@ -157,12 +194,16 @@ describe("getDashboardData", () => {
     ]);
     expect(result?.weeklyStudy).toHaveLength(7);
 
-    expect(prisma.project.count).toHaveBeenNthCalledWith(1, {
+    expect(prisma.project.groupBy).toHaveBeenCalledOnce();
+    expect(prisma.project.groupBy).toHaveBeenCalledWith({
+      by: ["status"],
       where: { userId: "user-id" },
+      _count: { _all: true },
     });
-    expect(prisma.project.count).toHaveBeenNthCalledWith(2, {
-      where: { userId: "user-id", status: "IN_PROGRESS" },
-    });
+    expect(prisma.project.findMany).toHaveBeenCalledTimes(2);
+    expect(prisma.task.count).toHaveBeenCalledOnce();
+    expect(prisma.task.findMany).toHaveBeenCalledTimes(2);
+    expect(prisma.learningLog.findMany).toHaveBeenCalledTimes(3);
     expect(prisma.task.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ project: { userId: "user-id" } }),
@@ -184,7 +225,7 @@ describe("getDashboardData", () => {
     });
 
     await expect(getDashboardData("user-id")).resolves.toBeNull();
-    expect(prisma.project.count).not.toHaveBeenCalled();
+    expect(prisma.project.groupBy).not.toHaveBeenCalled();
     expect(prisma.task.count).not.toHaveBeenCalled();
     expect(prisma.learningLog.findMany).not.toHaveBeenCalled();
     expect(prisma.project.findMany).not.toHaveBeenCalled();

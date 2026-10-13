@@ -230,6 +230,9 @@ export default async function ProjectDetailPage({
                 ? githubActivity.repository.externalId
                 : null
             }
+            listTruncated={
+              repositoryList.status === "CONNECTED" && repositoryList.truncated
+            }
             listStatus={repositoryList.status}
             projectId={project.id}
             repositories={

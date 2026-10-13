@@ -114,7 +114,7 @@ describe("listGitHubRepositories", () => {
     });
   });
 
-  it("limits pagination and reports a truncated result", async () => {
+  it("limits the default list to the latest 100 repositories", async () => {
     const repositories = Array.from({ length: 100 }, (_, index) =>
       repositoryResponse({
         id: index + 1,
@@ -127,13 +127,12 @@ describe("listGitHubRepositories", () => {
       .fn<typeof fetch>()
       .mockResolvedValue(new Response(JSON.stringify(repositories), { status: 200 }));
 
-    const result = await listGitHubRepositories("secret-token", {
-      fetcher,
-      maxPages: 1,
-    });
+    const result = await listGitHubRepositories("secret-token", { fetcher });
 
     expect(result.ok && result.repositories).toHaveLength(100);
     expect(result.ok && result.truncated).toBe(true);
+    expect(fetcher).toHaveBeenCalledOnce();
+    expect(String(fetcher.mock.calls[0][0])).toContain("page=1");
   });
 
   it("converts fetch failures into a safe network error", async () => {

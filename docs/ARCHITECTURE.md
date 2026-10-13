@@ -209,7 +209,7 @@ Server Action의 반환값은 성공 여부와 사용자에게 보여 줄 안전
 Server Component or service
  → userId와 provider로 서버에 저장된 GitHub 연결 정보 확인
  → access token을 서버 내부 GitHub client에만 전달
- → GitHub API 호출(no-store, 최대 5페이지)
+ → GitHub API 호출(no-store, 최근 업데이트 순 최대 100개)
  → 상태 코드 및 응답 스키마 검증
  → 토큰을 포함하지 않는 내부 DTO로 변환
  → 연결·재인증·rate limit·일시 장애 상태로 반환
@@ -302,12 +302,22 @@ Profile 조회는 User와 GitHub Account 연결 여부, 순서가 있는 UserTec
 - 사용자별 데이터는 잘못 공유되지 않도록 캐시 범위를 명확하게 관리한다.
 - 변경 후 필요한 경로만 재검증한다.
 - Dashboard의 독립적인 데이터 조회는 병렬화한다.
-- Dashboard는 사용자 시간대를 먼저 조회해 날짜 경계를 정한 뒤 프로젝트 수, 완료 Task, 주간 학습, 연속 학습용 날짜, 진행 프로젝트, 마감 Task, 최근 학습 기록과 최근 활동 원본을 `Promise.all`로 병렬 조회한다. 최근 활동은 사용자 소유 프로젝트 변경, 완료 Task와 학습 기록을 합쳐 시간순으로 제한한다.
+- Dashboard는 사용자 시간대 조회 1회 후 프로젝트 상태 집계와 화면 데이터 조회 9회를 `Promise.all`로 실행해 총 10회의 상위 Prisma 호출로 구성한다. 프로젝트 상태별 수는 3개의 개별 `count` 대신 사용자 범위의 `groupBy` 1회로 계산한다. 최근 활동은 사용자 소유 프로젝트 변경, 완료 Task와 학습 기록을 합쳐 시간순으로 제한한다.
 - 목록은 데이터 증가에 대비해 페이지네이션 또는 제한된 조회를 사용한다.
-- GitHub 응답은 짧은 TTL을 적용할 수 있지만 사용자 토큰과 권한 경계를 지킨다.
+- GitHub Repository 원격 목록은 사용자 토큰으로 `no-store` 조회하고 최근 업데이트 순 100개로 제한한다. 프로젝트에 연결한 기본 정보만 `(userId, externalId)` 단위로 캐시해 사용자 간 공유를 막는다.
 - Analytics 집계 테이블은 실제 성능 문제가 확인되기 전까지 만들지 않는다.
 - Analytics는 사용자 시간대로 이번 주와 이번 달의 날짜 경계를 먼저 계산하고, 두 기간의 합집합에 해당하는 학습 기록과 사용자 소유 프로젝트·Task를 병렬 조회한다. 주간·월간 일별 값, Task 완료율과 프로젝트 진행률은 애플리케이션 계층에서 원본 데이터로 계산한다.
 - Analytics 페이지는 Server Component에서 세션, Zod로 검증한 URL 기간과 집계 DTO를 준비한다. Recharts가 필요한 학습 막대와 기술 도넛만 Client Component로 분리하며, `ResponsiveContainer`와 차트 밖 텍스트 표·범례를 함께 사용한다.
+
+주요 화면의 기능 query가 명시적으로 실행하는 상위 Prisma 호출 수는 다음과 같다. Auth.js와 공통 앱 셸 조회는 제외하며, 관계 `select`의 실제 SQL 분할은 Prisma 실행 전략에 따라 달라질 수 있다.
+
+| 화면 | 상위 Prisma 호출 | 실행 방식 |
+| --- | ---: | --- |
+| Dashboard | 10 | 시간대 1회 후 9회 병렬 |
+| Projects 목록 | 1 | 기술과 Task 상태를 필요한 필드만 중첩 선택 |
+| Tasks 목록 | 1 | 사용자 소유 Project 조건과 필요한 Project 제목을 함께 선택 |
+| Learning 목록 | 2 | 전체 수와 페이지 데이터 병렬 조회, 페이지당 6개 |
+| Analytics | 4 | 시간대 1회 후 학습·Project·Task 3회 병렬 |
 
 ## 12. 환경 변수
 

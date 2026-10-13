@@ -21,6 +21,7 @@ interface RepositoryConnectionFormProps {
   projectId: string;
   repositories: RepositoryOption[];
   currentExternalId: string | null;
+  listTruncated: boolean;
   listStatus:
     | "CONNECTED"
     | "NOT_CONNECTED"
@@ -35,6 +36,7 @@ export function RepositoryConnectionForm({
   projectId,
   repositories,
   currentExternalId,
+  listTruncated,
   listStatus,
 }: RepositoryConnectionFormProps) {
   const connectAction = connectProjectRepositoryAction.bind(null, projectId);
@@ -87,6 +89,11 @@ export function RepositoryConnectionForm({
         </Select>
         {statusMessage ? (
           <p className="text-sm leading-6 text-muted">{statusMessage}</p>
+        ) : null}
+        {listAvailable && listTruncated ? (
+          <p className="text-sm leading-6 text-muted">
+            최근 업데이트된 Repository 100개만 표시합니다.
+          </p>
         ) : null}
         <div className="flex flex-wrap gap-2">
           <Button

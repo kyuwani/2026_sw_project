@@ -10,7 +10,7 @@ import {
 const GITHUB_API_URL = "https://api.github.com";
 const GITHUB_API_VERSION = "2026-03-10";
 const REPOSITORIES_PER_PAGE = 100;
-const MAX_REPOSITORY_PAGES = 5;
+const MAX_REPOSITORY_PAGES = 1;
 const RECENT_COMMIT_COUNT = 5;
 
 export interface GitHubRepositoryDto {

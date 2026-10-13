@@ -295,6 +295,8 @@ MVP에는 soft delete를 도입하지 않는다. User 삭제는 영향 범위가
 
 Day 17 Analytics의 Task 완료율은 완료 시점이 아닌 현재 `status`를 사용하므로 기존 `Task(projectId, status)` 인덱스와 사용자 소유 Project 조회를 활용한다. 기간별 Task 완료 추이를 구현하기 전까지 `completedAt` 단독 인덱스는 추가하지 않는다.
 
+Day 27 조회 점검에서는 Dashboard 프로젝트 상태 집계가 `Project(userId, status)`를, 최근 프로젝트 조회가 `Project(userId, updatedAt)`를, 주간·최근 학습 조회가 `LearningLog(userId, studiedAt)`를 사용함을 확인했다. Task 조회는 프로젝트 소유권을 함께 제한하며 기존 `Task(projectId, status)`와 `Task(projectId, dueDate)`를 활용한다. 현재 화면 조회 조건을 지원하지 못하는 새 병목이 확인되지 않아 migration이나 추측성 인덱스는 추가하지 않는다.
+
 ## 10. Migration과 Seed
 
 - 초기 migration `20260929071200_init`을 `npm run db:migrate -- --name init`으로 생성·적용했다.
