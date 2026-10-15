@@ -544,7 +544,7 @@ DB 연결 후 후속 확인:
 
 ### Day 29 — 배포와 Smoke Test
 
-상태: **진행 중** (2026-10-15, Preview·Production 배포 및 비인증 Smoke Test 완료, 인증 사용자 흐름 확인 대기)
+상태: **완료** (2026-10-15)
 
 작업:
 
@@ -557,6 +557,10 @@ DB 연결 후 후속 확인:
 - Production GitHub OAuth 환경 변수 교정과 deployment Ready 확인
 - Production DB 조회, 보호 경로, Auth.js provider와 GitHub OAuth 시작 callback 확인
 - Production GitHub 승인, Account 연결과 Dashboard redirect 확인
+- Production 인증 계정의 Project·Task·Learning Log 생성과 Task 완료 확인
+- Dashboard·Analytics 집계 반영 확인
+- GitHub Repository 연결과 최근 Commit 조회 확인
+- 최종 Smoke Test 구간의 HTTP 5xx 없음 확인
 
 완료 조건:
 
@@ -585,7 +589,7 @@ DB 연결 후 후속 확인:
 
 ### Day 31 — 버그 수정과 MVP 릴리스 판정
 
-상태: **진행 중** (2026-10-15, 로컬 전체 검증과 Production 배포 완료, 인증 사용자 Smoke Test 후 최종 판정 대기)
+상태: **완료** (2026-10-15)
 
 작업:
 
@@ -595,6 +599,9 @@ DB 연결 후 후속 확인:
 - 후속 backlog 작성
 - 통합 테스트 파일 간 공유 Technology 경합을 직렬 실행으로 안정화
 - 배포 환경 검사에서 잘못된 URL이 내부 `TypeError`로 종료되는 문제 수정
+- 프로젝트 저장 실패를 민감 정보 없이 추적할 수 있는 서버 진단 로그 추가
+- Production 인증 사용자 핵심 흐름과 GitHub 연동 Smoke Test 완료
+- MVP 완료 기준 충족과 운영 후속 backlog 확인
 
 완료 조건:
 
