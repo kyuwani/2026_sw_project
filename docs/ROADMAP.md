@@ -544,7 +544,7 @@ DB 연결 후 후속 확인:
 
 ### Day 29 — 배포와 Smoke Test
 
-상태: **진행 중** (2026-10-15, Preview 배포·공개 경로 Smoke Test 완료, Production 환경 변수 교정 대기)
+상태: **진행 중** (2026-10-15, Preview·Production 배포 및 비인증 Smoke Test 완료, 인증 사용자 흐름 확인 대기)
 
 작업:
 
@@ -554,6 +554,8 @@ DB 연결 후 후속 확인:
 - Preview deployment build와 Ready 상태 확인
 - 로그인·회원가입 응답, 보호 경로 redirect와 Auth.js endpoint 확인
 - Preview runtime error와 HTTP 5xx 로그 없음 확인
+- Production GitHub OAuth 환경 변수 교정과 deployment Ready 확인
+- Production DB 조회, 보호 경로, Auth.js provider와 GitHub OAuth 시작 callback 확인
 
 완료 조건:
 
@@ -582,7 +584,7 @@ DB 연결 후 후속 확인:
 
 ### Day 31 — 버그 수정과 MVP 릴리스 판정
 
-상태: **진행 중** (2026-10-15, 로컬 전체 검증 완료, Production 배포 후 최종 판정 대기)
+상태: **진행 중** (2026-10-15, 로컬 전체 검증과 Production 배포 완료, 인증 사용자 Smoke Test 후 최종 판정 대기)
 
 작업:
 
