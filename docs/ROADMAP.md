@@ -77,7 +77,7 @@
 
 ### Day 4 — PostgreSQL과 Prisma
 
-상태: **완료** (2026-09-22, PostgreSQL 연결 및 초기 migration 대기)
+상태: **완료** (Schema 확정 2026-09-22, 로컬 PostgreSQL 초기 migration 적용 2026-09-29)
 
 작업:
 
@@ -103,7 +103,7 @@ DB 연결 후 후속 확인:
 
 ### Day 5 — Database Schema 확정과 PostgreSQL 연결
 
-상태: **완료** (2026-09-22, PostgreSQL 연결 및 `init` migration 대기)
+상태: **완료** (Schema 확정 2026-09-22, 로컬 PostgreSQL `init` migration 적용 2026-09-29)
 
 작업:
 
@@ -123,6 +123,8 @@ DB 연결 후 후속 확인:
 ## 3. Week 2 — 인증, Project와 Task
 
 ### Day 6 — 사용자 인증
+
+상태: **완료** (2026-09-29, 이메일 인증 및 GitHub OAuth callback·계정 연결 검증 완료)
 
 작업:
 

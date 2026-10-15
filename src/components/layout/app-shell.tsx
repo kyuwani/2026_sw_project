@@ -7,9 +7,13 @@ import { TopNavigation } from "@/components/layout/top-navigation";
 
 interface AppShellProps {
   children: ReactNode;
+  user: {
+    name: string | null;
+    email: string | null;
+  };
 }
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children, user }: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -75,7 +79,7 @@ export function AppShell({ children }: AppShellProps) {
         본문으로 건너뛰기
       </a>
 
-      <Sidebar />
+      <Sidebar user={user} />
 
       {mobileMenuOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">
@@ -97,6 +101,7 @@ export function AppShell({ children }: AppShellProps) {
               mobile
               onNavigate={closeMobileMenu}
               closeButtonRef={closeButtonRef}
+              user={user}
             />
           </div>
         </div>

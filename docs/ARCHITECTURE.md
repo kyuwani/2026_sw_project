@@ -226,7 +226,7 @@ GitHub API 장애가 프로젝트 자체 데이터 조회를 막지 않도록 �
 - 이메일·비밀번호 로그인은 Credentials Provider와 자체 회원가입 Action으로 구성한다.
 - 비밀번호는 검증된 단방향 비밀번호 해시 알고리즘으로 저장한다.
 - 사용자의 GitHub `Account` 연결 정보는 Auth.js Adapter 모델로 관리한다.
-- MVP는 JWT 세션을 기본 후보로 하며, 구현 시 사용 버전의 Credentials Provider 및 Prisma Adapter 호환성을 검증한 뒤 확정한다.
+- MVP는 JWT 세션을 사용한다. Credentials Provider가 JWT 세션을 요구하며, Prisma Adapter는 GitHub 계정 연결과 사용자 저장에 사용한다.
 
 ### 8.2 인증과 인가 분리
 
