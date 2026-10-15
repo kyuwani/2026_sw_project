@@ -556,6 +556,7 @@ DB 연결 후 후속 확인:
 - Preview runtime error와 HTTP 5xx 로그 없음 확인
 - Production GitHub OAuth 환경 변수 교정과 deployment Ready 확인
 - Production DB 조회, 보호 경로, Auth.js provider와 GitHub OAuth 시작 callback 확인
+- Production GitHub 승인, Account 연결과 Dashboard redirect 확인
 
 완료 조건:
 

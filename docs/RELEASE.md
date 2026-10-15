@@ -4,7 +4,7 @@
 
 상태: **보류** (2026-10-15)
 
-로컬 품질 검증과 Vercel Preview·Production 배포는 통과했다. 운영 계정의 GitHub OAuth callback 완료와 인증 후 CRUD·집계 Smoke Test, 환경별 migration 이력 확인이 남아 있어 운영 릴리스 완료로 판정하지 않는다.
+로컬 품질 검증, Vercel Preview·Production 배포와 Production GitHub OAuth는 통과했다. 인증 후 CRUD·집계 Smoke Test와 환경별 migration 이력 확인이 남아 있어 운영 릴리스 완료로 판정하지 않는다.
 
 ## 완료된 검증
 
@@ -22,14 +22,14 @@
 - Production 로그인·회원가입·Auth.js endpoint 응답과 보호 경로 redirect 확인
 - Production credentials 인증의 DB 조회와 안전한 실패 응답 확인
 - GitHub provider 노출, OAuth authorize 요청의 Client ID와 callback URL 확인
+- 운영 계정의 GitHub 승인, callback HTTP 302, Account 연결과 Dashboard 진입 확인
 - Production Smoke Test 중 HTTP 5xx 없음 확인
 
 ## 릴리스 차단 항목
 
-1. 운영 사용자가 GitHub 인증을 승인한 뒤 callback, Account 연결과 로그아웃까지 확인해야 한다.
-2. Preview에는 GitHub OAuth ID와 Secret이 없어 이메일 인증만 사용할 수 있다. Preview OAuth 검증이 필요하면 별도 OAuth App과 고정 callback host가 필요하다.
-3. Vercel `Secret` 타입은 CLI `env run`으로 내려오지 않는다. 승인된 CI 또는 운영 환경에서 Preview와 Production의 `DIRECT_URL`을 주입해 migration status와 deploy를 확인해야 한다.
-4. Production 인증 계정으로 Project·Task·Learning Log CRUD, Dashboard와 Analytics를 Smoke Test해야 한다.
+1. Preview에는 GitHub OAuth ID와 Secret이 없어 이메일 인증만 사용할 수 있다. Preview OAuth 검증이 필요하면 별도 OAuth App과 고정 callback host가 필요하다.
+2. Vercel `Secret` 타입은 CLI `env run`으로 내려오지 않는다. 승인된 CI 또는 운영 환경에서 Preview와 Production의 `DIRECT_URL`을 주입해 migration status와 deploy를 확인해야 한다.
+3. Production 인증 계정으로 Project·Task·Learning Log CRUD, Dashboard와 Analytics를 Smoke Test해야 한다.
 
 ## MVP 완료 기준 점검
 
@@ -39,7 +39,7 @@
 | Project·Task 생성과 완료 | 충족 | 통합·E2E 통과 |
 | Learning Log 작성과 검색 | 충족 | 단위·통합·E2E 통과 |
 | Dashboard·Analytics 집계 | 충족 | 단위·통합·E2E 통과 |
-| GitHub OAuth·Repository·Commit | 조건부 | Production provider와 authorize callback 정상, 실제 승인·Account 연결 확인 필요 |
+| GitHub OAuth·Repository·Commit | 충족 | Production 승인, callback과 Account 연결 확인, Repository·Commit 로직 테스트 통과 |
 | 사용자별 리소스 격리 | 충족 | 소유권 단위·통합 테스트 통과 |
 | 모바일·데스크톱 핵심 흐름 | 충족 | Playwright 목표 viewport와 접근성 검증 통과 |
 | 전체 품질 명령 | 충족 | lint, typecheck, unit, integration, E2E, build 통과 |
