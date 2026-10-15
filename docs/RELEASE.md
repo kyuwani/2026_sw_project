@@ -10,7 +10,7 @@
 
 - ESLint 통과
 - TypeScript strict typecheck 통과
-- 단위 테스트 158개 통과, DB 통합 대상 17개는 일반 실행에서 의도대로 제외
+- 단위 테스트 159개 통과, DB 통합 대상 17개는 일반 실행에서 의도대로 제외
 - PostgreSQL 통합 테스트 17개 통과
 - Playwright 핵심 사용자 여정과 접근성·반응형 테스트 2개 통과
 - Next.js production build 통과
