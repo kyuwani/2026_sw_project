@@ -32,6 +32,10 @@ function createValidFormData(): FormData {
 }
 
 describe("createProjectAction", () => {
+  const consoleErrorSpy = vi
+    .spyOn(console, "error")
+    .mockImplementation(() => undefined);
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -83,6 +87,31 @@ describe("createProjectAction", () => {
 
     expect(result.fieldErrors?.endDate).toBeDefined();
     expect(createProject).not.toHaveBeenCalled();
+  });
+
+  it("returns a safe message and logs only diagnostic metadata on failure", async () => {
+    authMock.mockResolvedValue({
+      user: { id: "user-id" },
+      expires: "2099-01-01T00:00:00.000Z",
+    });
+    const databaseError = Object.assign(new Error("internal database error"), {
+      code: "P2021",
+    });
+    vi.mocked(createProject).mockRejectedValue(databaseError);
+
+    await expect(
+      createProjectAction({}, createValidFormData()),
+    ).resolves.toEqual({
+      message: "프로젝트를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    });
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "프로젝트 변경에 실패했습니다.",
+      {
+        operation: "create",
+        errorName: "Error",
+        errorCodes: ["P2021"],
+      },
+    );
   });
 });
 

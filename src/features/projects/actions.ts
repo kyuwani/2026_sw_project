@@ -27,6 +27,33 @@ function getProjectFormValues(formData: FormData) {
   };
 }
 
+function logProjectMutationError(operation: string, error: unknown): void {
+  const codes: string[] = [];
+  let currentError: unknown = error;
+
+  for (let depth = 0; depth < 3 && currentError; depth += 1) {
+    if (typeof currentError !== "object") {
+      break;
+    }
+
+    if (
+      "code" in currentError &&
+      typeof currentError.code === "string" &&
+      !codes.includes(currentError.code)
+    ) {
+      codes.push(currentError.code);
+    }
+
+    currentError = "cause" in currentError ? currentError.cause : undefined;
+  }
+
+  console.error("프로젝트 변경에 실패했습니다.", {
+    operation,
+    errorName: error instanceof Error ? error.name : "UnknownError",
+    errorCodes: codes,
+  });
+}
+
 export async function createProjectAction(
   _previousState: CreateProjectActionState,
   formData: FormData,
@@ -47,7 +74,8 @@ export async function createProjectAction(
 
   try {
     project = await createProject(session.user.id, parsed.data);
-  } catch {
+  } catch (error) {
+    logProjectMutationError("create", error);
     return {
       message: "프로젝트를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     };
@@ -89,7 +117,8 @@ export async function updateProjectAction(
       parsedProjectId.data,
       parsedInput.data,
     );
-  } catch {
+  } catch (error) {
+    logProjectMutationError("update", error);
     return {
       message: "프로젝트를 수정하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     };
@@ -126,7 +155,8 @@ export async function deleteProjectAction(
 
   try {
     deleted = await deleteProject(session.user.id, parsedProjectId.data);
-  } catch {
+  } catch (error) {
+    logProjectMutationError("delete", error);
     return {
       message: "프로젝트를 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     };
