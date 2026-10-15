@@ -15,7 +15,12 @@ if (!process.env.DATABASE_URL) {
 
 const testProcess = spawn(
   process.execPath,
-  ["node_modules/vitest/vitest.mjs", "run", "integration.test.ts"],
+  [
+    "node_modules/vitest/vitest.mjs",
+    "run",
+    "integration.test.ts",
+    "--no-file-parallelism",
+  ],
   {
     env: { ...process.env, RUN_DB_TESTS: "1" },
     stdio: "inherit",

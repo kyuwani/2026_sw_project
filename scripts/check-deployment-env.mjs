@@ -8,8 +8,12 @@ const databaseUrlSchema = z
     "PostgreSQL 연결 문자열이어야 합니다.",
   )
   .refine((value) => {
-    const hostname = new URL(value).hostname;
-    return !["localhost", "127.0.0.1", "::1"].includes(hostname);
+    try {
+      const hostname = new URL(value).hostname;
+      return !["localhost", "127.0.0.1", "::1"].includes(hostname);
+    } catch {
+      return false;
+    }
   }, "배포 환경에서는 로컬 데이터베이스를 사용할 수 없습니다.");
 
 const deploymentEnvSchema = z.object({

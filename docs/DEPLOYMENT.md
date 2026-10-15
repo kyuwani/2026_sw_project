@@ -33,14 +33,14 @@ Preview와 Production 각각에 다음 변수를 등록한다. 실제 값은 Ver
 
 `NEXT_PUBLIC_` 변수는 현재 필요하지 않다. DB URL과 인증 값에는 이 접두사를 붙이지 않는다. 환경 변수 변경은 기존 deployment에 소급 적용되지 않으므로 변경 후 새 deployment를 생성한다.
 
-Vercel 환경을 내려받지 않고 현재 설정을 검증한다.
+Secret이 주입되는 승인된 CI job 또는 운영자 shell에서 현재 설정을 검증한다.
 
 ```bash
-vercel env run -e preview -- npm run deploy:check -- preview
-vercel env run -e production -- npm run deploy:check -- production
+npm run deploy:check -- preview
+npm run deploy:check -- production
 ```
 
-검증 명령은 필수값, PostgreSQL URL 형식, 로컬 DB 주소 사용 여부만 확인하고 값을 출력하지 않는다. Preview와 Production 값이 서로 다른지는 Vercel 설정 화면에서 별도로 대조한다.
+Vercel에서 `Secret` 타입으로 저장한 값은 CLI의 `env run`으로 내려오지 않는다. 로컬 `.env.local`이 있는 개발 머신에서 `vercel env run`을 사용하면 누락된 값이 로컬 값으로 보완되어 잘못된 DB를 검사할 수 있으므로 배포 검증과 migration에 사용하지 않는다. 검증 명령은 필수값, PostgreSQL URL 형식, 로컬 DB 주소 사용 여부만 확인하고 값을 출력하지 않는다. Preview와 Production 값이 서로 다른지는 Vercel 설정 화면에서 별도로 대조한다.
 
 ## 4. GitHub OAuth callback
 
@@ -68,16 +68,16 @@ Production: https://<production-host>/api/auth/callback/github
 6. Production 전용 `DIRECT_URL`로 status 확인 후 migration을 한 번 실행한다.
 7. Production application을 배포하고 Day 29 smoke test를 수행한다.
 
-예시:
+Secret이 주입되는 승인된 CI job 또는 운영자 shell에서 실행하는 예시:
 
 ```bash
-vercel env run -e preview -- npm run db:migrate:status
-vercel env run -e preview -- npm run db:migrate:deploy
-vercel env run -e production -- npm run db:migrate:status
-vercel env run -e production -- npm run db:migrate:deploy
+npm run db:migrate:status
+npm run db:migrate:deploy
 ```
 
 Vercel build command에는 migration을 연결하지 않는다. Preview와 Production deployment가 동시에 실행될 수 있으므로 migration은 승인된 CI 단계 또는 운영자가 한 번만 실행한다. 적용한 migration 파일을 수정하거나 삭제하지 않으며, 실패 시 원인을 확인한 뒤 새 migration 또는 `prisma migrate resolve` 절차를 검토한다. 데이터 손실 가능성이 있으면 자동 복구를 시도하지 않고 backup 복원을 우선 판단한다.
+
+명령 실행 전에 대상 환경의 `DIRECT_URL` host를 별도 안전한 경로로 확인한다. 명령 출력의 datasource host가 `localhost` 또는 `127.0.0.1`이면 즉시 중단한다.
 
 ## 6. 배포 전 체크리스트
 

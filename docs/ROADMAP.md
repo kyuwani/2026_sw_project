@@ -544,11 +544,16 @@ DB 연결 후 후속 확인:
 
 ### Day 29 — 배포와 Smoke Test
 
+상태: **진행 중** (2026-10-15, Preview 배포·공개 경로 Smoke Test 완료, Production 환경 변수 교정 대기)
+
 작업:
 
 - Vercel 배포
 - 인증, CRUD, Analytics, GitHub 기본 점검
 - 오류 로그 확인
+- Preview deployment build와 Ready 상태 확인
+- 로그인·회원가입 응답, 보호 경로 redirect와 Auth.js endpoint 확인
+- Preview runtime error와 HTTP 5xx 로그 없음 확인
 
 완료 조건:
 
@@ -558,12 +563,16 @@ DB 연결 후 후속 확인:
 
 ### Day 30 — 문서와 운영 준비
 
+상태: **완료** (2026-10-15)
+
 작업:
 
 - README와 로컬 실행 방법
 - 환경 변수와 migration 문서
 - 아키텍처 및 DB 문서 동기화
 - 알려진 제한사항 정리
+- 프로젝트 소개, 로컬 실행, 검증과 배포 절차를 포함한 README 작성
+- Vercel Secret을 로컬 값으로 오인하지 않도록 migration 절차 보완
 
 완료 조건:
 
@@ -573,12 +582,16 @@ DB 연결 후 후속 확인:
 
 ### Day 31 — 버그 수정과 MVP 릴리스 판정
 
+상태: **진행 중** (2026-10-15, 로컬 전체 검증 완료, Production 배포 후 최종 판정 대기)
+
 작업:
 
 - 남은 높은 우선순위 버그 수정
 - 전체 검증 실행
 - MVP 완료 기준 점검
 - 후속 backlog 작성
+- 통합 테스트 파일 간 공유 Technology 경합을 직렬 실행으로 안정화
+- 배포 환경 검사에서 잘못된 URL이 내부 `TypeError`로 종료되는 문제 수정
 
 완료 조건:
 
