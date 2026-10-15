@@ -10,6 +10,7 @@ import {
   calculateTaskCompletion,
   calculateTechnologyStudyBreakdown,
   getAnalyticsPeriods,
+  getLearningActivityPeriod,
   type AnalyticsPeriod,
   type StudyPeriodSummary,
   type TaskCompletionSummary,
@@ -33,6 +34,7 @@ export interface AnalyticsData {
   monthlyStudy: StudyPeriodSummary;
   selectedPeriod: AnalyticsPeriodSelection["period"];
   selectedStudy: StudyPeriodSummary;
+  learningActivity: StudyPeriodSummary;
   learningStreak: number;
   taskCompletion: TaskCompletionSummary;
   projectProgress: AnalyticsProjectProgress[];
@@ -54,13 +56,19 @@ export async function getAnalyticsData(
   }
 
   const periods = getAnalyticsPeriods(now, user.timezone);
+  const learningActivityPeriod = getLearningActivityPeriod(periods.today);
   const selectedRange: AnalyticsPeriod =
     selection.period === "WEEK"
       ? periods.week
       : selection.period === "MONTH"
         ? periods.month
         : { startDate: selection.startDate, endDate: selection.endDate };
-  const ranges = [periods.week, periods.month, selectedRange];
+  const ranges = [
+    periods.week,
+    periods.month,
+    selectedRange,
+    learningActivityPeriod,
+  ];
   const queryStart = new Date(
     Math.min(...ranges.map(({ startDate }) => startDate.getTime())),
   );
@@ -117,6 +125,7 @@ export async function getAnalyticsData(
     monthlyStudy: aggregateStudyPeriod(learningLogs, periods.month),
     selectedPeriod: selection.period,
     selectedStudy: aggregateStudyPeriod(learningLogs, selectedRange),
+    learningActivity: aggregateStudyPeriod(learningLogs, learningActivityPeriod),
     learningStreak: calculateLearningStreak(
       studiedDates.map(({ studiedAt }) => studiedAt),
       periods.today,

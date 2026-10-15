@@ -104,6 +104,8 @@ describe("getAnalyticsData", () => {
     expect(result?.monthlyStudy.totalMinutes).toBe(60);
     expect(result?.selectedPeriod).toBe("MONTH");
     expect(result?.selectedStudy.totalMinutes).toBe(60);
+    expect(result?.learningActivity.dailyStudy).toHaveLength(365);
+    expect(result?.learningActivity.totalMinutes).toBe(90);
     expect(result?.learningStreak).toBe(2);
     expect(result?.taskCompletion).toEqual({
       totalCount: 3,
@@ -122,7 +124,7 @@ describe("getAnalyticsData", () => {
         where: {
           userId: "user-id",
           studiedAt: {
-            gte: new Date("2026-10-26T00:00:00.000Z"),
+            gte: new Date("2025-11-02T00:00:00.000Z"),
             lte: new Date("2026-11-30T00:00:00.000Z"),
           },
         },
@@ -171,7 +173,7 @@ describe("getAnalyticsData", () => {
       expect.objectContaining({
         where: expect.objectContaining({
           studiedAt: {
-            gte: new Date("2026-09-01T00:00:00.000Z"),
+            gte: new Date("2025-10-13T00:00:00.000Z"),
             lte: new Date("2026-10-31T00:00:00.000Z"),
           },
         }),
