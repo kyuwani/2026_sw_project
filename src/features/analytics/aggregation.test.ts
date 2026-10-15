@@ -6,6 +6,7 @@ import {
   calculateTechnologyStudyBreakdown,
   getAnalyticsPeriods,
   getLearningActivityPeriod,
+  getPreviousAnalyticsPeriod,
   getStudyIntensityLevel,
 } from "./aggregation";
 
@@ -33,6 +34,18 @@ describe("analytics aggregation", () => {
     ).toEqual({
       startDate: new Date("2025-10-16T00:00:00.000Z"),
       endDate: new Date("2026-10-15T00:00:00.000Z"),
+    });
+  });
+
+  it("creates an equally sized previous analytics period", () => {
+    expect(
+      getPreviousAnalyticsPeriod({
+        startDate: new Date("2026-10-05T00:00:00.000Z"),
+        endDate: new Date("2026-10-11T00:00:00.000Z"),
+      }),
+    ).toEqual({
+      startDate: new Date("2026-09-28T00:00:00.000Z"),
+      endDate: new Date("2026-10-04T00:00:00.000Z"),
     });
   });
 

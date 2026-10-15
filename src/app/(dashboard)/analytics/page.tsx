@@ -26,6 +26,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Progress } from "@/components/ui/progress";
 import { AnalyticsFilterForm } from "@/features/analytics/components/analytics-filter-form";
 import { LearningActivityCalendar } from "@/features/analytics/components/learning-activity-calendar";
+import { RetrospectiveReport } from "@/features/analytics/components/retrospective-report";
 import { StudyTimeChart } from "@/features/analytics/components/study-time-chart";
 import { TechnologyStudyChart } from "@/features/analytics/components/technology-study-chart";
 import {
@@ -81,6 +82,12 @@ export default async function AnalyticsPage({
   );
   const chartUnitLabel =
     analytics.selectedStudy.dailyStudy.length > 62 ? "주별" : "일별";
+  const periodName =
+    selection.period === "WEEK"
+      ? "이번 주"
+      : selection.period === "MONTH"
+        ? "이번 달"
+        : "선택 기간";
 
   return (
     <div className="space-y-8">
@@ -112,6 +119,14 @@ export default async function AnalyticsPage({
         </Badge>
         <p className="text-sm font-medium text-muted">{periodLabel}</p>
       </div>
+
+      <RetrospectiveReport
+        currentStudy={analytics.selectedStudy}
+        learningStreak={analytics.learningStreak}
+        periodName={periodName}
+        previousStudy={analytics.previousStudy}
+        technologyStudy={analytics.technologyStudy}
+      />
 
       <section
         aria-label="Analytics 요약"

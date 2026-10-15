@@ -104,6 +104,7 @@ describe("getAnalyticsData", () => {
     expect(result?.monthlyStudy.totalMinutes).toBe(60);
     expect(result?.selectedPeriod).toBe("MONTH");
     expect(result?.selectedStudy.totalMinutes).toBe(60);
+    expect(result?.previousStudy.totalMinutes).toBe(30);
     expect(result?.learningActivity.dailyStudy).toHaveLength(365);
     expect(result?.learningActivity.totalMinutes).toBe(90);
     expect(result?.learningStreak).toBe(2);
