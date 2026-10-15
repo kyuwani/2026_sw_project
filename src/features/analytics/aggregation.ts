@@ -42,10 +42,29 @@ export interface TechnologyStudyItem {
   percentage: number;
 }
 
+export const LEARNING_ACTIVITY_DAY_COUNT = 365;
+
+export type StudyIntensityLevel = 0 | 1 | 2 | 3 | 4;
+
 function addUtcDays(date: Date, days: number): Date {
   const nextDate = new Date(date);
   nextDate.setUTCDate(nextDate.getUTCDate() + days);
   return nextDate;
+}
+
+export function getLearningActivityPeriod(today: Date): AnalyticsPeriod {
+  return {
+    startDate: addUtcDays(today, -(LEARNING_ACTIVITY_DAY_COUNT - 1)),
+    endDate: today,
+  };
+}
+
+export function getStudyIntensityLevel(minutes: number): StudyIntensityLevel {
+  if (minutes <= 0) return 0;
+  if (minutes < 30) return 1;
+  if (minutes < 60) return 2;
+  if (minutes < 120) return 3;
+  return 4;
 }
 
 function toDateKey(date: Date): string {

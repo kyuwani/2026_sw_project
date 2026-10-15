@@ -5,6 +5,8 @@ import {
   calculateTaskCompletion,
   calculateTechnologyStudyBreakdown,
   getAnalyticsPeriods,
+  getLearningActivityPeriod,
+  getStudyIntensityLevel,
 } from "./aggregation";
 
 describe("analytics aggregation", () => {
@@ -23,6 +25,21 @@ describe("analytics aggregation", () => {
       startDate: new Date("2026-11-01T00:00:00.000Z"),
       endDate: new Date("2026-11-30T00:00:00.000Z"),
     });
+  });
+
+  it("creates a 365-day learning activity period ending today", () => {
+    expect(
+      getLearningActivityPeriod(new Date("2026-10-15T00:00:00.000Z")),
+    ).toEqual({
+      startDate: new Date("2025-10-16T00:00:00.000Z"),
+      endDate: new Date("2026-10-15T00:00:00.000Z"),
+    });
+  });
+
+  it("maps study minutes to fixed heatmap intensity levels", () => {
+    expect([0, 1, 29, 30, 59, 60, 119, 120].map(getStudyIntensityLevel)).toEqual(
+      [0, 1, 1, 2, 2, 3, 3, 4],
+    );
   });
 
   it("fills missing days with zero and excludes records outside the period", () => {

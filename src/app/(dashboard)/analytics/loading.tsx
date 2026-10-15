@@ -16,6 +16,7 @@ export default function AnalyticsLoading() {
           <Skeleton className="h-36 w-full" key={index} />
         ))}
       </div>
+      <Skeleton className="h-52 w-full" />
       <div className="grid gap-6 xl:grid-cols-2">
         <Skeleton className="h-96 w-full" />
         <Skeleton className="h-96 w-full" />

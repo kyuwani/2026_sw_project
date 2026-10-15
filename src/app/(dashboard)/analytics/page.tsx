@@ -25,6 +25,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Progress } from "@/components/ui/progress";
 import { AnalyticsFilterForm } from "@/features/analytics/components/analytics-filter-form";
+import { LearningActivityCalendar } from "@/features/analytics/components/learning-activity-calendar";
 import { StudyTimeChart } from "@/features/analytics/components/study-time-chart";
 import { TechnologyStudyChart } from "@/features/analytics/components/technology-study-chart";
 import {
@@ -145,6 +146,20 @@ export default async function AnalyticsPage({
           tone="success"
         />
       </section>
+
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader>
+          <CardTitle>학습 캘린더</CardTitle>
+          <CardDescription>
+            최근 365일의 날짜별 학습 시간입니다. 월요일부터 일요일 순서로 표시합니다.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="min-w-0">
+          <LearningActivityCalendar
+            dailyStudy={analytics.learningActivity.dailyStudy}
+          />
+        </CardContent>
+      </Card>
 
       <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)]">
         <Card className="min-w-0">
