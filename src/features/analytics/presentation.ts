@@ -1,9 +1,21 @@
-import type { DailyStudyItem } from "./aggregation";
+import type {
+  DailyStudyItem,
+  StudyPeriodSummary,
+  TechnologyStudyItem,
+} from "./aggregation";
 
 export interface StudyChartItem {
   date: string;
   label: string;
   minutes: number;
+}
+
+export interface RetrospectiveSummary {
+  activeDayCount: number;
+  changeMinutes: number;
+  peakStudy: DailyStudyItem | null;
+  topTechnology: TechnologyStudyItem | null;
+  trend: "NEW" | "UP" | "DOWN" | "SAME";
 }
 
 const shortDateFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -40,4 +52,34 @@ export function getAverageDailyStudyMinutes(
   dayCount: number,
 ): number {
   return dayCount === 0 ? 0 : Math.round(totalMinutes / dayCount);
+}
+
+export function buildRetrospectiveSummary(
+  currentStudy: StudyPeriodSummary,
+  previousStudy: StudyPeriodSummary,
+  technologyStudy: TechnologyStudyItem[],
+): RetrospectiveSummary {
+  const changeMinutes =
+    currentStudy.totalMinutes - previousStudy.totalMinutes;
+  const peakStudy = currentStudy.dailyStudy.reduce<DailyStudyItem | null>(
+    (peak, item) =>
+      item.minutes > 0 && (!peak || item.minutes > peak.minutes) ? item : peak,
+    null,
+  );
+
+  return {
+    activeDayCount: currentStudy.dailyStudy.filter(({ minutes }) => minutes > 0)
+      .length,
+    changeMinutes,
+    peakStudy,
+    topTechnology: technologyStudy[0] ?? null,
+    trend:
+      previousStudy.totalMinutes === 0 && currentStudy.totalMinutes > 0
+        ? "NEW"
+        : changeMinutes > 0
+          ? "UP"
+          : changeMinutes < 0
+            ? "DOWN"
+            : "SAME",
+  };
 }

@@ -11,6 +11,7 @@ export default function AnalyticsLoading() {
         <Skeleton className="h-5 w-full max-w-xl" />
       </div>
       <Skeleton className="h-36 w-full" />
+      <Skeleton className="h-64 w-full" />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
           <Skeleton className="h-36 w-full" key={index} />

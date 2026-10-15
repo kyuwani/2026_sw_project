@@ -59,6 +59,22 @@ export function getLearningActivityPeriod(today: Date): AnalyticsPeriod {
   };
 }
 
+export function getPreviousAnalyticsPeriod(
+  period: AnalyticsPeriod,
+): AnalyticsPeriod {
+  const dayCount =
+    Math.round(
+      (period.endDate.getTime() - period.startDate.getTime()) /
+        DAY_IN_MILLISECONDS,
+    ) + 1;
+  const endDate = addUtcDays(period.startDate, -1);
+
+  return {
+    startDate: addUtcDays(endDate, -(dayCount - 1)),
+    endDate,
+  };
+}
+
 export function getStudyIntensityLevel(minutes: number): StudyIntensityLevel {
   if (minutes <= 0) return 0;
   if (minutes < 30) return 1;
