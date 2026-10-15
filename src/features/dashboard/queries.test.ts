@@ -1,0 +1,234 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { prisma } from "@/lib/db/prisma";
+import { getDashboardData } from "./queries";
+
+vi.mock("server-only", () => ({}));
+vi.mock("@/lib/db/prisma", () => ({
+  prisma: {
+    user: { findUnique: vi.fn() },
+    project: { groupBy: vi.fn(), findMany: vi.fn() },
+    task: { count: vi.fn(), findMany: vi.fn() },
+    learningLog: { findMany: vi.fn() },
+  },
+}));
+
+const userRecord = {
+  id: "user-id",
+  name: "사용자",
+  email: "user@example.invalid",
+  emailVerified: null,
+  image: null,
+  bio: null,
+  githubUrl: null,
+  passwordHash: null,
+  timezone: "Asia/Seoul",
+  createdAt: new Date("2026-10-01T00:00:00.000Z"),
+  updatedAt: new Date("2026-10-01T00:00:00.000Z"),
+};
+
+const learningLogBase = {
+  id: "learning-log-id",
+  title: "Dashboard 집계 학습",
+  content: "Dashboard 쿼리를 학습했다.",
+  studyMinutes: 60,
+  studiedAt: new Date("2026-10-12T00:00:00.000Z"),
+  category: "FRAMEWORK" as const,
+  userId: "user-id",
+  createdAt: new Date("2026-10-12T01:00:00.000Z"),
+  updatedAt: new Date("2026-10-12T01:00:00.000Z"),
+};
+
+function projectGroupRecord(
+  status: "IN_PROGRESS" | "COMPLETED",
+  count: number,
+) {
+  const date = new Date("2026-10-12T00:00:00.000Z");
+
+  return {
+    id: "",
+    title: "",
+    description: null,
+    status,
+    startDate: null,
+    endDate: null,
+    repositoryUrl: null,
+    repositoryId: null,
+    userId: "user-id",
+    createdAt: date,
+    updatedAt: date,
+    _count: {
+      id: count,
+      title: count,
+      description: count,
+      status: count,
+      startDate: count,
+      endDate: count,
+      repositoryUrl: count,
+      repositoryId: count,
+      userId: count,
+      createdAt: count,
+      updatedAt: count,
+      _all: count,
+    },
+    _min: undefined,
+    _max: undefined,
+  };
+}
+
+describe("getDashboardData", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns user-scoped dashboard aggregates and DTOs", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(userRecord);
+    vi.mocked(prisma.project.groupBy).mockResolvedValue([
+      projectGroupRecord("IN_PROGRESS", 2),
+      projectGroupRecord("COMPLETED", 1),
+    ]);
+    vi.mocked(prisma.task.count).mockResolvedValue(5);
+    vi.mocked(prisma.learningLog.findMany)
+      .mockResolvedValueOnce([
+        learningLogBase,
+        {
+          ...learningLogBase,
+          id: "second-learning-log",
+          studyMinutes: 30,
+        },
+      ])
+      .mockResolvedValueOnce([
+        learningLogBase,
+        {
+          ...learningLogBase,
+          id: "yesterday-log",
+          studiedAt: new Date("2026-10-11T00:00:00.000Z"),
+        },
+      ])
+      .mockResolvedValueOnce([learningLogBase]);
+
+    const projectRecord = {
+        id: "project-id",
+        title: "DevLog",
+        description: "개발 기록 서비스",
+        status: "IN_PROGRESS" as const,
+        startDate: null,
+        endDate: new Date("2026-10-31T00:00:00.000Z"),
+        repositoryUrl: null,
+        repositoryId: null,
+        userId: "user-id",
+        createdAt: new Date("2026-10-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-10-12T00:00:00.000Z"),
+        technologies: [{ technology: { name: "Next.js" } }],
+        tasks: [
+          { status: "DONE" as const, dueDate: null },
+          {
+            status: "TODO" as const,
+            dueDate: new Date("2026-10-15T00:00:00.000Z"),
+          },
+        ],
+      };
+    const taskRecord = {
+        id: "task-id",
+        title: "Dashboard 구현",
+        description: null,
+        status: "TODO" as const,
+        priority: "HIGH" as const,
+        dueDate: new Date("2026-10-13T00:00:00.000Z"),
+        completedAt: null,
+        projectId: "project-id",
+        createdAt: new Date("2026-10-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-10-12T00:00:00.000Z"),
+        project: { title: "DevLog" },
+      };
+    vi.mocked(prisma.project.findMany)
+      .mockResolvedValueOnce([projectRecord])
+      .mockResolvedValueOnce([
+        {
+          ...projectRecord,
+        },
+      ]);
+    vi.mocked(prisma.task.findMany)
+      .mockResolvedValueOnce([taskRecord])
+      .mockResolvedValueOnce([
+        {
+          ...taskRecord,
+          id: "completed-task-id",
+          title: "집계 구현 완료",
+          completedAt: new Date("2026-10-11T12:00:00.000Z"),
+        },
+      ]);
+
+    const result = await getDashboardData(
+      "user-id",
+      new Date("2026-10-12T03:00:00.000Z"),
+    );
+
+    expect(result?.summary).toEqual({
+      totalProjects: 3,
+      inProgressProjects: 2,
+      completedProjects: 1,
+      completedTasks: 5,
+      weeklyStudyMinutes: 90,
+      learningStreak: 2,
+    });
+    expect(result?.projects[0]).toEqual(
+      expect.objectContaining({
+        id: "project-id",
+        progress: 50,
+        nextDueDate: new Date("2026-10-15T00:00:00.000Z"),
+        technologyNames: ["Next.js"],
+      }),
+    );
+    expect(result?.upcomingTasks[0]).toEqual(
+      expect.objectContaining({
+        projectTitle: "DevLog",
+        dueDate: new Date("2026-10-13T00:00:00.000Z"),
+      }),
+    );
+    expect(result?.recentLearningLogs).toHaveLength(1);
+    expect(result?.recentActivity.map(({ type }) => type)).toEqual([
+      "LEARNING_LOGGED",
+      "PROJECT_UPDATED",
+      "TASK_COMPLETED",
+    ]);
+    expect(result?.weeklyStudy).toHaveLength(7);
+
+    expect(prisma.project.groupBy).toHaveBeenCalledOnce();
+    expect(prisma.project.groupBy).toHaveBeenCalledWith({
+      by: ["status"],
+      where: { userId: "user-id" },
+      _count: { _all: true },
+    });
+    expect(prisma.project.findMany).toHaveBeenCalledTimes(2);
+    expect(prisma.task.count).toHaveBeenCalledOnce();
+    expect(prisma.task.findMany).toHaveBeenCalledTimes(2);
+    expect(prisma.learningLog.findMany).toHaveBeenCalledTimes(3);
+    expect(prisma.task.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ project: { userId: "user-id" } }),
+        take: 3,
+      }),
+    );
+    expect(prisma.learningLog.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-id" },
+        take: 3,
+      }),
+    );
+  });
+
+  it("returns null and skips aggregate queries for an invalid time zone", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      ...userRecord,
+      timezone: "invalid/time-zone",
+    });
+
+    await expect(getDashboardData("user-id")).resolves.toBeNull();
+    expect(prisma.project.groupBy).not.toHaveBeenCalled();
+    expect(prisma.task.count).not.toHaveBeenCalled();
+    expect(prisma.learningLog.findMany).not.toHaveBeenCalled();
+    expect(prisma.project.findMany).not.toHaveBeenCalled();
+    expect(prisma.task.findMany).not.toHaveBeenCalled();
+  });
+});

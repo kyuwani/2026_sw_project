@@ -77,7 +77,7 @@
 
 ### Day 4 — PostgreSQL과 Prisma
 
-상태: **완료** (2026-09-22, PostgreSQL 연결 및 초기 migration 대기)
+상태: **완료** (Schema 확정 2026-09-22, 로컬 PostgreSQL 초기 migration 적용 2026-09-29)
 
 작업:
 
@@ -103,7 +103,7 @@ DB 연결 후 후속 확인:
 
 ### Day 5 — Database Schema 확정과 PostgreSQL 연결
 
-상태: **완료** (2026-09-22, PostgreSQL 연결 및 `init` migration 대기)
+상태: **완료** (Schema 확정 2026-09-22, 로컬 PostgreSQL `init` migration 적용 2026-09-29)
 
 작업:
 
@@ -123,6 +123,8 @@ DB 연결 후 후속 확인:
 ## 3. Week 2 — 인증, Project와 Task
 
 ### Day 6 — 사용자 인증
+
+상태: **완료** (2026-09-29, 이메일 인증 및 GitHub OAuth callback·계정 연결 검증 완료)
 
 작업:
 
@@ -146,6 +148,8 @@ DB 연결 후 후속 확인:
 
 ### Day 7 — Project 생성
 
+상태: **완료** (2026-10-06)
+
 작업:
 
 - Project 입력 스키마
@@ -160,6 +164,8 @@ DB 연결 후 후속 확인:
 - 생성된 프로젝트와 기술 연결이 트랜잭션으로 저장된다.
 
 ### Day 8 — Project 목록과 상세
+
+상태: **완료** (2026-10-08)
 
 작업:
 
@@ -176,6 +182,8 @@ DB 연결 후 후속 확인:
 
 ### Day 9 — Project 수정과 삭제
 
+상태: **완료** (2026-10-08)
+
 작업:
 
 - 수정 폼과 Action
@@ -191,6 +199,8 @@ DB 연결 후 후속 확인:
 
 ### Day 10 — Task CRUD
 
+상태: **완료** (2026-10-08)
+
 작업:
 
 - Task 생성, 조회, 수정, 삭제
@@ -204,6 +214,8 @@ DB 연결 후 후속 확인:
 - `DONE` 상태와 `completedAt`이 항상 일관된다.
 
 ### Day 11 — Task 필터와 진행률
+
+상태: **완료** (2026-10-08)
 
 작업:
 
@@ -223,6 +235,8 @@ DB 연결 후 후속 확인:
 
 ### Day 12 — Learning Log 생성
 
+상태: **완료** (2026-10-08)
+
 작업:
 
 - 학습 기록 입력 스키마
@@ -236,6 +250,8 @@ DB 연결 후 후속 확인:
 - 사용자의 시간대가 날짜 처리에 반영된다.
 
 ### Day 13 — Learning Log 목록과 상세
+
+상태: **완료** (2026-10-08)
 
 작업:
 
@@ -252,6 +268,8 @@ DB 연결 후 후속 확인:
 
 ### Day 14 — Learning Log 수정·삭제·필터
 
+상태: **완료** (2026-10-12)
+
 작업:
 
 - 수정과 삭제
@@ -265,6 +283,8 @@ DB 연결 후 후속 확인:
 - 타인의 기록을 조회하거나 변경할 수 없다.
 
 ### Day 15 — Dashboard 집계
+
+상태: **완료** (2026-10-12)
 
 작업:
 
@@ -280,6 +300,8 @@ DB 연결 후 후속 확인:
 - 연속 학습 일수 경계 조건 테스트가 통과한다.
 
 ### Day 16 — Dashboard UI 완성
+
+상태: **완료** (2026-10-12)
 
 작업:
 
@@ -299,6 +321,8 @@ DB 연결 후 후속 확인:
 
 ### Day 17 — Analytics 집계
 
+상태: **완료** (2026-10-12)
+
 작업:
 
 - 주간·월간 학습 시간
@@ -313,6 +337,8 @@ DB 연결 후 후속 확인:
 - 주요 집계 로직 단위 테스트가 통과한다.
 
 ### Day 18 — Analytics UI
+
+상태: **완료** (2026-10-12)
 
 작업:
 
@@ -330,6 +356,8 @@ DB 연결 후 후속 확인:
 
 ### Day 19 — GitHub Repository 조회
 
+상태: **완료** (2026-10-12)
+
 작업:
 
 - GitHub access token 서버 접근
@@ -345,6 +373,8 @@ DB 연결 후 후속 확인:
 
 ### Day 20 — Project와 Repository 연결
 
+상태: **완료** (2026-10-12)
+
 작업:
 
 - Repository 캐시 upsert
@@ -359,6 +389,8 @@ DB 연결 후 후속 확인:
 - 연결 해제 후 프로젝트 자체 데이터는 유지된다.
 
 ### Day 21 — Profile
+
+상태: **완료** (2026-10-12)
 
 작업:
 
@@ -377,11 +409,16 @@ DB 연결 후 후속 확인:
 
 ### Day 22 — 사용자 흐름 통합 점검
 
+상태: **완료** (2026-10-12)
+
 작업:
 
 - 가입부터 Dashboard까지 전체 흐름
 - 프로젝트·Task·학습 기록 간 연결
 - 내비게이션과 redirect 정리
+- 프로젝트 생성 후 상세 화면으로 이동해 Task 작성 흐름 연결
+- 앱 셸의 학습 기록 빠른 생성 링크와 사용자 시간대 기준 날짜 적용
+- Profile 로딩·오류 상태 보완
 
 완료 조건:
 
@@ -391,12 +428,17 @@ DB 연결 후 후속 확인:
 
 ### Day 23 — 인증·인가 보안 테스트
 
+상태: **완료** (2026-10-12)
+
 작업:
 
 - Project, Task, LearningLog 소유권 테스트
 - 입력 변조와 예상하지 않은 ID 테스트
 - OAuth 토큰 노출 점검
 - 로그인 요청 보호 전략 검토
+- 변조된 `userId` 무시와 비정상 UUID 조기 거절 테스트
+- 인증 실패 메시지와 OAuth token 비노출 테스트
+- 필수 `AUTH_SECRET` 검증과 배포 계층 rate limit 전략 확정
 
 완료 조건:
 
@@ -406,11 +448,15 @@ DB 연결 후 후속 확인:
 
 ### Day 24 — 핵심 통합 테스트
 
+상태: **완료** (2026-10-12)
+
 작업:
 
 - Prisma 기반 Project·Task 통합 테스트
 - 학습 기록과 집계 통합 테스트
 - transaction 실패 시나리오
+- 로컬 DB 최신 migration 적용과 단일 통합 테스트 명령 추가
+- Project·LearningLog 생성 실패 시 Technology 생성 rollback 검증
 
 완료 조건:
 
@@ -420,12 +466,16 @@ DB 연결 후 후속 확인:
 
 ### Day 25 — E2E 테스트
 
+상태: **완료** (2026-10-13)
+
 작업:
 
 - 로그인
 - 프로젝트와 Task 생성·완료
 - 학습 기록 작성
 - Dashboard 반영
+- Playwright Chromium 기반 핵심 사용자 여정 자동화
+- 테스트 사용자와 연관 데이터 자동 정리
 
 완료 조건:
 
@@ -435,12 +485,16 @@ DB 연결 후 후속 확인:
 
 ### Day 26 — 접근성과 반응형 검증
 
+상태: **완료** (2026-10-13)
+
 작업:
 
 - 키보드 내비게이션
 - 포커스와 Dialog
 - label, heading, 명도 대비
 - 모바일·태블릿·데스크톱 레이아웃
+- axe serious·critical 규칙 자동 검증
+- 360×800, 768×1024, 1440×900 viewport 가로 넘침 검증
 
 완료 조건:
 
@@ -452,12 +506,16 @@ DB 연결 후 후속 확인:
 
 ### Day 27 — 성능과 데이터 조회 개선
 
+상태: **완료** (2026-10-13)
+
 작업:
 
 - 중복 쿼리와 N+1 점검
 - 필요한 인덱스 검토
 - Dashboard 병렬 조회
 - GitHub 캐시와 목록 제한
+- Dashboard 프로젝트 상태 집계를 단일 `groupBy`로 통합
+- 주요 화면 쿼리 수와 기존 인덱스 적합성 문서화
 
 완료 조건:
 
@@ -467,12 +525,16 @@ DB 연결 후 후속 확인:
 
 ### Day 28 — Production 배포 준비
 
+상태: **완료** (2026-10-13)
+
 작업:
 
 - Production DB와 migration 절차
 - Vercel 환경 변수
 - OAuth callback URL
 - Preview와 Production 환경 구분
+- 배포 환경변수 preflight와 migration status/deploy 명령
+- 환경별 배포 체크리스트 문서화
 
 완료 조건:
 
@@ -482,11 +544,23 @@ DB 연결 후 후속 확인:
 
 ### Day 29 — 배포와 Smoke Test
 
+상태: **완료** (2026-10-15)
+
 작업:
 
 - Vercel 배포
 - 인증, CRUD, Analytics, GitHub 기본 점검
 - 오류 로그 확인
+- Preview deployment build와 Ready 상태 확인
+- 로그인·회원가입 응답, 보호 경로 redirect와 Auth.js endpoint 확인
+- Preview runtime error와 HTTP 5xx 로그 없음 확인
+- Production GitHub OAuth 환경 변수 교정과 deployment Ready 확인
+- Production DB 조회, 보호 경로, Auth.js provider와 GitHub OAuth 시작 callback 확인
+- Production GitHub 승인, Account 연결과 Dashboard redirect 확인
+- Production 인증 계정의 Project·Task·Learning Log 생성과 Task 완료 확인
+- Dashboard·Analytics 집계 반영 확인
+- GitHub Repository 연결과 최근 Commit 조회 확인
+- 최종 Smoke Test 구간의 HTTP 5xx 없음 확인
 
 완료 조건:
 
@@ -496,12 +570,16 @@ DB 연결 후 후속 확인:
 
 ### Day 30 — 문서와 운영 준비
 
+상태: **완료** (2026-10-15)
+
 작업:
 
 - README와 로컬 실행 방법
 - 환경 변수와 migration 문서
 - 아키텍처 및 DB 문서 동기화
 - 알려진 제한사항 정리
+- 프로젝트 소개, 로컬 실행, 검증과 배포 절차를 포함한 README 작성
+- Vercel Secret을 로컬 값으로 오인하지 않도록 migration 절차 보완
 
 완료 조건:
 
@@ -511,12 +589,19 @@ DB 연결 후 후속 확인:
 
 ### Day 31 — 버그 수정과 MVP 릴리스 판정
 
+상태: **완료** (2026-10-15)
+
 작업:
 
 - 남은 높은 우선순위 버그 수정
 - 전체 검증 실행
 - MVP 완료 기준 점검
 - 후속 backlog 작성
+- 통합 테스트 파일 간 공유 Technology 경합을 직렬 실행으로 안정화
+- 배포 환경 검사에서 잘못된 URL이 내부 `TypeError`로 종료되는 문제 수정
+- 프로젝트 저장 실패를 민감 정보 없이 추적할 수 있는 서버 진단 로그 추가
+- Production 인증 사용자 핵심 흐름과 GitHub 연동 Smoke Test 완료
+- MVP 완료 기준 충족과 운영 후속 backlog 확인
 
 완료 조건:
 

@@ -47,8 +47,8 @@ Data access layer
 | Authentication | Auth.js | 세션, GitHub OAuth, 인증 엔드포인트 |
 | Chart | Recharts | Analytics 시각화 |
 | Icons | Lucide React | 일관된 아이콘 |
-| Unit/Integration test | Vitest 후보 | 비즈니스 로직과 데이터 검증 |
-| E2E test | Playwright 후보 | 핵심 사용자 흐름 검증 |
+| Unit/Integration test | Vitest | 비즈니스 로직과 데이터 검증 |
+| E2E test | Playwright, axe-core | Chromium 기반 핵심 사용자 흐름·접근성·반응형 검증 |
 | Deployment | Vercel | Preview 및 Production 배포 |
 | Database hosting | 미정 | 연결 풀링과 백업을 지원하는 PostgreSQL 선택 |
 
@@ -207,15 +207,22 @@ Server Action의 반환값은 성공 여부와 사용자에게 보여 줄 안전
 
 ```text
 Server Component or service
- → 서버에 저장된 GitHub 연결 정보 확인
- → GitHub API 호출
+ → userId와 provider로 서버에 저장된 GitHub 연결 정보 확인
+ → access token을 서버 내부 GitHub client에만 전달
+ → GitHub API 호출(no-store, 최근 업데이트 순 최대 100개)
  → 상태 코드 및 응답 스키마 검증
- → 내부 DTO로 변환
- → 제한된 시간 동안 캐시
+ → 토큰을 포함하지 않는 내부 DTO로 변환
+ → 연결·재인증·rate limit·일시 장애 상태로 반환
  → UI 렌더링
 ```
 
 GitHub API 장애가 프로젝트 자체 데이터 조회를 막지 않도록 외부 활동 영역은 독립적인 오류 상태를 가진다.
+Day 19의 Repository 원격 조회는 사용자별 토큰 응답이 공유되지 않도록 캐시하지 않는다. Day 20에서 프로젝트에 연결한 Repository 기본 정보만 DB에 캐시한다.
+Repository 연결 Server Action은 세션 사용자, 프로젝트 소유권과 GitHub 접근 가능 목록을 모두 다시 검증한다. 검증된 Repository는 사용자별 외부 ID로 upsert하고 Project 연결과 URL 변경을 같은 transaction에서 처리한다. 최근 Commit은 저장하지 않고 서버에서 실시간 조회하며, 실패해도 캐시된 Repository와 프로젝트 데이터는 렌더링한다.
+
+Profile 조회는 User와 GitHub Account 연결 여부, 순서가 있는 UserTechnology를 최소 DTO로 변환한다. Profile 수정 Action은 세션 사용자만 갱신하고 IANA 시간대와 GitHub URL을 Zod로 검증하며, User 기본 정보와 주 사용 기술 교체를 transaction으로 처리한다. 이름 변경 후 JWT 세션의 표시 이름도 갱신하고 시간대에 의존하는 Dashboard, Analytics와 Learning 경로를 재검증한다. OAuth 프로필 이미지는 허용한 GitHub avatar host만 렌더링한다.
+
+인증된 앱 셸은 User에서 이름, 이메일과 시간대만 별도 DTO로 조회한다. 서버 레이아웃에서 검증된 시간대를 기준으로 오늘 날짜를 계산해 Client Component에 직렬화 가능한 문자열로 전달하며, 잘못 저장된 시간대에는 UTC를 안전한 기본값으로 사용한다.
 
 ## 8. 인증 구조
 
@@ -226,7 +233,7 @@ GitHub API 장애가 프로젝트 자체 데이터 조회를 막지 않도록 �
 - 이메일·비밀번호 로그인은 Credentials Provider와 자체 회원가입 Action으로 구성한다.
 - 비밀번호는 검증된 단방향 비밀번호 해시 알고리즘으로 저장한다.
 - 사용자의 GitHub `Account` 연결 정보는 Auth.js Adapter 모델로 관리한다.
-- MVP는 JWT 세션을 기본 후보로 하며, 구현 시 사용 버전의 Credentials Provider 및 Prisma Adapter 호환성을 검증한 뒤 확정한다.
+- MVP는 JWT 세션을 사용한다. Credentials Provider가 JWT 세션을 요구하며, Prisma Adapter는 GitHub 계정 연결과 사용자 저장에 사용한다.
 
 ### 8.2 인증과 인가 분리
 
@@ -243,6 +250,18 @@ GitHub API 장애가 프로젝트 자체 데이터 조회를 막지 않도록 �
 - 실제 보안 검사는 Page, Server Action, query 또는 service에서 다시 수행한다.
 - 사용자가 보낸 `userId`는 신뢰하지 않고 세션의 사용자 ID를 사용한다.
 - OAuth access token은 서버에서만 접근하고 클라이언트 props나 로그에 포함하지 않는다.
+
+### 8.4 인증 요청 보호
+
+- 로그인·회원가입 Server Action은 공개 HTTP endpoint와 동일하게 취급하고, Zod 검증 후 Auth.js 또는 도메인 서비스만 호출한다.
+- Next.js 기본 same-origin 검사를 유지하며 신뢰할 수 있는 reverse proxy가 확정되기 전에는 `serverActions.allowedOrigins`를 추가하지 않는다.
+- 로그인 실패는 이메일 존재 여부나 내부 인증 오류를 구분하지 않는 동일한 메시지로 반환한다.
+- 비밀번호는 bcrypt cost 12로 해시하며 평문을 저장하거나 로그에 기록하지 않는다.
+- `AUTH_SECRET`은 32자 이상 필수값으로 검증하고 누락 또는 짧은 값에서는 서버를 시작하지 않는다.
+- OAuth access token은 `server-only` 모듈에서 필요한 필드만 조회하고 안전한 Repository·Commit DTO로 변환한 뒤 반환한다.
+- 공개 배포 전 `/login`, `/signup`, `/api/auth/*`에 배포 계층의 IP 기반 rate limit을 먼저 관찰 모드로 적용한 뒤 429 차단으로 전환한다. 계정 단위 제한이 필요하면 다중 인스턴스에서 공유되는 저장소를 사용하며 프로세스 메모리 제한기는 사용하지 않는다.
+
+참고: [Next.js Server Action 설정](https://nextjs.org/docs/app/api-reference/config/next-config-js/serverActions), [Auth.js Credentials 보안 책임](https://authjs.dev/getting-started/providers/credentials), [Vercel WAF Rate Limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)
 
 ## 9. API와 Server Action 전략
 
@@ -283,9 +302,22 @@ GitHub API 장애가 프로젝트 자체 데이터 조회를 막지 않도록 �
 - 사용자별 데이터는 잘못 공유되지 않도록 캐시 범위를 명확하게 관리한다.
 - 변경 후 필요한 경로만 재검증한다.
 - Dashboard의 독립적인 데이터 조회는 병렬화한다.
+- Dashboard는 사용자 시간대 조회 1회 후 프로젝트 상태 집계와 화면 데이터 조회 9회를 `Promise.all`로 실행해 총 10회의 상위 Prisma 호출로 구성한다. 프로젝트 상태별 수는 3개의 개별 `count` 대신 사용자 범위의 `groupBy` 1회로 계산한다. 최근 활동은 사용자 소유 프로젝트 변경, 완료 Task와 학습 기록을 합쳐 시간순으로 제한한다.
 - 목록은 데이터 증가에 대비해 페이지네이션 또는 제한된 조회를 사용한다.
-- GitHub 응답은 짧은 TTL을 적용할 수 있지만 사용자 토큰과 권한 경계를 지킨다.
+- GitHub Repository 원격 목록은 사용자 토큰으로 `no-store` 조회하고 최근 업데이트 순 100개로 제한한다. 프로젝트에 연결한 기본 정보만 `(userId, externalId)` 단위로 캐시해 사용자 간 공유를 막는다.
 - Analytics 집계 테이블은 실제 성능 문제가 확인되기 전까지 만들지 않는다.
+- Analytics는 사용자 시간대로 이번 주와 이번 달의 날짜 경계를 먼저 계산하고, 두 기간의 합집합에 해당하는 학습 기록과 사용자 소유 프로젝트·Task를 병렬 조회한다. 주간·월간 일별 값, Task 완료율과 프로젝트 진행률은 애플리케이션 계층에서 원본 데이터로 계산한다.
+- Analytics 페이지는 Server Component에서 세션, Zod로 검증한 URL 기간과 집계 DTO를 준비한다. Recharts가 필요한 학습 막대와 기술 도넛만 Client Component로 분리하며, `ResponsiveContainer`와 차트 밖 텍스트 표·범례를 함께 사용한다.
+
+주요 화면의 기능 query가 명시적으로 실행하는 상위 Prisma 호출 수는 다음과 같다. Auth.js와 공통 앱 셸 조회는 제외하며, 관계 `select`의 실제 SQL 분할은 Prisma 실행 전략에 따라 달라질 수 있다.
+
+| 화면 | 상위 Prisma 호출 | 실행 방식 |
+| --- | ---: | --- |
+| Dashboard | 10 | 시간대 1회 후 9회 병렬 |
+| Projects 목록 | 1 | 기술과 Task 상태를 필요한 필드만 중첩 선택 |
+| Tasks 목록 | 1 | 사용자 소유 Project 조건과 필요한 Project 제목을 함께 선택 |
+| Learning 목록 | 2 | 전체 수와 페이지 데이터 병렬 조회, 페이지당 6개 |
+| Analytics | 4 | 시간대 1회 후 학습·Project·Task 3회 병렬 |
 
 ## 12. 환경 변수
 
@@ -311,7 +343,8 @@ GitHub API 장애가 프로젝트 자체 데이터 조회를 막지 않도록 �
 ## 13. 배포 구조
 
 - Vercel Preview와 Production 환경을 분리한다.
-- DB migration은 애플리케이션 요청 중 자동 실행하지 않는다.
-- Production 배포 전 migration 적용 절차를 별도로 둔다.
-- Preview DB 전략은 DB 호스팅 업체 결정 후 문서화한다.
-- OAuth callback URL을 Local, Preview, Production 환경별로 관리한다.
+- DB migration은 애플리케이션 요청이나 Vercel build 중 자동 실행하지 않는다.
+- runtime은 pooled `DATABASE_URL`, migration은 direct `DIRECT_URL`을 사용한다.
+- Preview와 Production은 DB, `AUTH_SECRET`과 GitHub OAuth App을 공유하지 않는다.
+- OAuth callback URL은 Local과 환경별 고정 host로 관리한다.
+- 구체적인 적용 순서와 점검표는 `docs/DEPLOYMENT.md`를 따른다.

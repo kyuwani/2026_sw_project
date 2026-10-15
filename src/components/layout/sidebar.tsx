@@ -6,12 +6,17 @@ import { usePathname } from "next/navigation";
 import type { RefObject } from "react";
 
 import { navigationItems } from "@/components/layout/navigation";
+import { signOutAction } from "@/features/auth/actions";
 import { cn } from "@/lib/utils/cn";
 
 interface SidebarProps {
   mobile?: boolean;
   onNavigate?: () => void;
   closeButtonRef?: RefObject<HTMLButtonElement | null>;
+  user: {
+    name: string | null;
+    email: string | null;
+  };
 }
 
 function isActivePath(pathname: string, href: string): boolean {
@@ -22,8 +27,10 @@ export function Sidebar({
   mobile = false,
   onNavigate,
   closeButtonRef,
+  user,
 }: SidebarProps) {
   const pathname = usePathname();
+  const displayName = user.name ?? user.email ?? "사용자";
 
   return (
     <aside
@@ -106,19 +113,21 @@ export function Sidebar({
       <div className="border-t border-white/10 p-3">
         <div className="flex items-center gap-3 rounded-xl p-2.5">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-indigo-200 text-sm font-bold text-indigo-800">
-            김
+            {displayName.slice(0, 1).toUpperCase()}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white">김개발</p>
-            <p className="truncate text-xs text-sidebar-muted">dev@example.com</p>
+            <p className="truncate text-sm font-semibold text-white">{displayName}</p>
+            <p className="truncate text-xs text-sidebar-muted">{user.email}</p>
           </div>
-          <button
-            type="button"
-            className="flex size-9 shrink-0 items-center justify-center rounded-lg text-sidebar-muted hover:bg-white/10 hover:text-white"
-            aria-label="로그아웃"
-          >
-            <LogOut aria-hidden="true" className="size-4" />
-          </button>
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              className="flex size-9 shrink-0 items-center justify-center rounded-lg text-sidebar-muted hover:bg-white/10 hover:text-white"
+              aria-label="로그아웃"
+            >
+              <LogOut aria-hidden="true" className="size-4" />
+            </button>
+          </form>
         </div>
       </div>
     </aside>

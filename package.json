@@ -8,26 +8,39 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:integration": "node scripts/run-integration-tests.mjs",
     "typecheck": "tsc --noEmit",
     "postinstall": "prisma generate",
     "prisma:format": "prisma format",
     "prisma:validate": "prisma validate",
     "prisma:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev"
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:status": "prisma migrate status",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "deploy:check": "node scripts/check-deployment-env.mjs"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.11.3",
     "@next/env": "^16.3.5",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
+    "bcryptjs": "^3.0.3",
     "lucide-react": "^1.47.0",
     "next": "16.3.5",
+    "next-auth": "^5.0.0-beta.32",
     "pg": "^8.23.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "react-is": "19.2.8",
+    "recharts": "^3.10.1",
     "server-only": "^0.0.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
@@ -37,6 +50,7 @@
     "eslint-config-next": "16.3.5",
     "prisma": "7.10.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.11"
   }
 }

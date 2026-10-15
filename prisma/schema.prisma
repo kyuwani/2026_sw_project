@@ -26,15 +26,81 @@ enum TaskPriority {
   HIGH
 }
 
+enum LearningCategory {
+  LANGUAGE
+  FRAMEWORK
+  ALGORITHM
+  DATABASE
+  DEVOPS
+  OTHER
+}
+
+enum GitHubRepositoryVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum GitHubRepositoryPermission {
+  ADMIN
+  WRITE
+  READ
+}
+
 model User {
-  id           String        @id @default(uuid()) @db.Uuid
-  name         String?
-  email        String?       @unique
-  image        String?
-  projects     Project[]
-  learningLogs LearningLog[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id                  String             @id @default(uuid()) @db.Uuid
+  name                String?
+  email               String?            @unique
+  emailVerified       DateTime?
+  image               String?
+  bio                 String?            @db.Text
+  githubUrl           String?
+  passwordHash        String?
+  timezone            String             @default("Asia/Seoul")
+  accounts            Account[]
+  sessions            Session[]
+  projects            Project[]
+  learningLogs        LearningLog[]
+  githubRepositories  GitHubRepository[]
+  primaryTechnologies UserTechnology[]
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model Project {
@@ -45,8 +111,10 @@ model Project {
   startDate     DateTime?           @db.Date
   endDate       DateTime?           @db.Date
   repositoryUrl String?
+  repositoryId  String?             @db.Uuid
   userId        String              @db.Uuid
   user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repository    GitHubRepository?   @relation(fields: [repositoryId], references: [id], onDelete: SetNull)
   tasks         Task[]
   technologies  ProjectTechnology[]
   createdAt     DateTime            @default(now())
@@ -54,6 +122,33 @@ model Project {
 
   @@index([userId, status])
   @@index([userId, updatedAt])
+  @@index([repositoryId])
+}
+
+model GitHubRepository {
+  id              String                     @id @default(uuid()) @db.Uuid
+  externalId      String
+  name            String
+  fullName        String
+  ownerLogin      String
+  ownerAvatarUrl  String?
+  htmlUrl         String
+  description     String?                    @db.Text
+  visibility      GitHubRepositoryVisibility
+  permission      GitHubRepositoryPermission
+  language        String?
+  defaultBranch   String
+  isFork          Boolean
+  isArchived      Boolean
+  remoteUpdatedAt DateTime
+  remotePushedAt  DateTime?
+  cachedAt        DateTime                   @default(now())
+  userId          String                     @db.Uuid
+  user            User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects        Project[]
+
+  @@unique([userId, externalId])
+  @@index([userId, remoteUpdatedAt])
 }
 
 model Task {
@@ -79,6 +174,7 @@ model LearningLog {
   content      String                  @db.Text
   studyMinutes Int
   studiedAt    DateTime                @db.Date
+  category     LearningCategory        @default(OTHER)
   userId       String                  @db.Uuid
   user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   technologies LearningLogTechnology[]
@@ -93,7 +189,21 @@ model Technology {
   name         String                  @unique
   projects     ProjectTechnology[]
   learningLogs LearningLogTechnology[]
+  primaryUsers UserTechnology[]
   createdAt    DateTime                @default(now())
+}
+
+model UserTechnology {
+  userId       String     @db.Uuid
+  technologyId String     @db.Uuid
+  position     Int
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  technology   Technology @relation(fields: [technologyId], references: [id], onDelete: Restrict)
+  createdAt    DateTime   @default(now())
+
+  @@id([userId, technologyId])
+  @@unique([userId, position])
+  @@index([technologyId])
 }
 
 model ProjectTechnology {

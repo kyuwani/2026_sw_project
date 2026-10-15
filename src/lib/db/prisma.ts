@@ -9,15 +9,29 @@ const globalForPrisma = globalThis as typeof globalThis & {
   prisma?: PrismaClient;
 };
 
-function createPrismaClient(): PrismaClient {
+let prismaClient = globalForPrisma.prisma;
+
+function getPrismaClient(): PrismaClient {
+  if (prismaClient) {
+    return prismaClient;
+  }
+
   const { DATABASE_URL } = getServerEnv();
   const adapter = new PrismaPg({ connectionString: DATABASE_URL });
+  prismaClient = new PrismaClient({ adapter });
 
-  return new PrismaClient({ adapter });
+  if (process.env.NODE_ENV !== "production") {
+    globalForPrisma.prisma = prismaClient;
+  }
+
+  return prismaClient;
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, property) {
+    const client = getPrismaClient();
+    const value = Reflect.get(client, property, client) as unknown;
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+    return typeof value === "function" ? value.bind(client) : value;
+  },
+});
