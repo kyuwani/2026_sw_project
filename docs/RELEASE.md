@@ -53,7 +53,7 @@
 ### 운영 후속 작업
 
 - 승인된 실행 환경에서 migration status 정기 확인 자동화
-- `/login`, `/signup`, `/api/auth/*` 배포 계층 rate limit 적용과 관찰
+- `/login`, `/signup`, `/api/auth/*` 배포 계층 rate limit 적용과 관찰 (Day 34, 절차는 `DEPLOYMENT.md` 6절)
 - Preview GitHub OAuth가 필요해질 때 별도 OAuth App과 고정 callback host 구성
 - PostgreSQL client 다음 major 전 `sslmode=verify-full` 명시 검토
 

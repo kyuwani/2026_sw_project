@@ -79,7 +79,29 @@ Vercel build command에는 migration을 연결하지 않는다. Preview와 Produ
 
 명령 실행 전에 대상 환경의 `DIRECT_URL` host를 별도 안전한 경로로 확인한다. 명령 출력의 datasource host가 `localhost` 또는 `127.0.0.1`이면 즉시 중단한다.
 
-## 6. 배포 전 체크리스트
+## 6. 인증 요청 rate limit
+
+로그인·회원가입 Server Action과 Auth.js endpoint는 Vercel Firewall의 Rate Limiting 규칙으로 IP 단위 요청 수를 제한한다. 애플리케이션 프로세스 메모리 제한기는 서버리스 인스턴스 간에 공유되지 않으므로 사용하지 않는다. 사용 중인 Vercel 플랜에서 제공하는 규칙 수와 기능을 먼저 확인한다.
+
+| 규칙 | 조건 | 기준 | 시작 값 |
+| --- | --- | --- | --- |
+| 로그인 | Path가 `/login`과 같고 Method가 `POST` | IP | 60초 동안 10회 |
+| 회원가입 | Path가 `/signup`과 같고 Method가 `POST` | IP | 60초 동안 5회 |
+| Auth.js | Path가 `/api/auth/`로 시작 | IP | 60초 동안 60회 |
+
+로그인과 회원가입 화면의 GET 요청은 제한하지 않는다. GitHub 로그인 시작도 `/login` 또는 `/signup`으로 전송되는 Server Action이므로 같은 규칙에 포함된다.
+
+적용 순서:
+
+1. Production 프로젝트의 Firewall에서 세 규칙을 `Log` 동작으로 추가하고 publish한다.
+2. 최소 7일 동안 Firewall 화면에서 규칙별 일치 횟수와 IP 분포를 관찰한다.
+3. 정상 사용자의 요청이 기준에 걸리지 않는지 확인하고 필요하면 기준 값을 조정한다.
+4. 규칙 동작을 `Too Many Requests (429)`로 바꾸고 publish한다.
+5. 전환 후 로그인, 회원가입, GitHub OAuth callback을 다시 확인한다.
+
+차단된 Server Action 요청은 `(auth)` route group의 오류 화면에서 "잠시 후 다시 시도" 안내와 재시도 버튼으로 표시된다. Preview에는 Production 전환 전 같은 규칙을 `Log` 동작으로 적용해 설정을 미리 확인할 수 있다.
+
+## 7. 배포 전 체크리스트
 
 - [ ] Preview와 Production DB가 서로 다르다.
 - [ ] 각 환경의 `DATABASE_URL`은 pooled, `DIRECT_URL`은 direct 연결이다.
@@ -89,3 +111,4 @@ Vercel build command에는 migration을 연결하지 않는다. Preview와 Produ
 - [ ] `npm run deploy:check -- <environment>`가 통과한다.
 - [ ] `npm run lint`, `npm run typecheck`, 전체 test와 `npm run build`가 통과한다.
 - [ ] Secret, `.env*`, `.vercel`과 build 산출물이 Git에 포함되지 않았다.
+- [ ] Production Firewall에 인증 요청 rate limit 규칙이 현재 단계(`Log` 또는 429)로 적용되어 있다.
