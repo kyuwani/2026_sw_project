@@ -259,7 +259,8 @@ Profile 조회는 User와 GitHub Account 연결 여부, 순서가 있는 UserTec
 - 비밀번호는 bcrypt cost 12로 해시하며 평문을 저장하거나 로그에 기록하지 않는다.
 - `AUTH_SECRET`은 32자 이상 필수값으로 검증하고 누락 또는 짧은 값에서는 서버를 시작하지 않는다.
 - OAuth access token은 `server-only` 모듈에서 필요한 필드만 조회하고 안전한 Repository·Commit DTO로 변환한 뒤 반환한다.
-- 공개 배포 전 `/login`, `/signup`, `/api/auth/*`에 배포 계층의 IP 기반 rate limit을 먼저 관찰 모드로 적용한 뒤 429 차단으로 전환한다. 계정 단위 제한이 필요하면 다중 인스턴스에서 공유되는 저장소를 사용하며 프로세스 메모리 제한기는 사용하지 않는다.
+- 공개 배포 전 `/login`, `/signup`, `/api/auth/*`에 배포 계층의 IP 기반 rate limit을 먼저 관찰 모드로 적용한 뒤 429 차단으로 전환한다. 계정 단위 제한이 필요하면 다중 인스턴스에서 공유되는 저장소를 사용하며 프로세스 메모리 제한기는 사용하지 않는다. 규칙과 전환 절차는 `docs/DEPLOYMENT.md`를 따른다.
+- 배포 계층에서 차단된 인증 Server Action 응답은 `(auth)` route group의 `error.tsx`가 받아 내부 정보 없이 재시도 안내를 표시한다.
 
 참고: [Next.js Server Action 설정](https://nextjs.org/docs/app/api-reference/config/next-config-js/serverActions), [Auth.js Credentials 보안 책임](https://authjs.dev/getting-started/providers/credentials), [Vercel WAF Rate Limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)
 
