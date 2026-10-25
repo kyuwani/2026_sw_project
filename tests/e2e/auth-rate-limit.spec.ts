@@ -20,7 +20,7 @@ test("로그인 요청이 rate limit으로 거절되면 재시도 안내를 표�
   await expect(
     page.getByRole("heading", { name: "요청을 처리하지 못했습니다" }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "DevLog" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "잔디노트" })).toBeVisible();
 
   await page.unroute("**/login");
   await page.getByRole("button", { name: "다시 시도" }).click();

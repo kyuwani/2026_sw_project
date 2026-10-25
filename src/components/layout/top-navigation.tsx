@@ -22,7 +22,7 @@ function getPageTitle(pathname: string): string {
     (path) => pathname === path || pathname.startsWith(`${path}/`),
   );
 
-  return matchedPath ? pageTitles[matchedPath] : "DevLog";
+  return matchedPath ? pageTitles[matchedPath] : "잔디노트";
 }
 
 export function TopNavigation({

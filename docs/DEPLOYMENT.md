@@ -1,8 +1,8 @@
-# DevLog 배포 절차
+# 잔디노트 배포 절차
 
 ## 1. 목적과 범위
 
-이 문서는 DevLog를 Vercel Preview와 Production에 배포하기 전 필요한 환경 분리, PostgreSQL migration, GitHub OAuth callback과 검증 절차를 정의한다. 실제 Vercel 프로젝트 연결, 호스팅 DB 생성과 첫 배포는 Day 29에서 수행한다.
+이 문서는 잔디노트를 Vercel Preview와 Production에 배포하기 전 필요한 환경 분리, PostgreSQL migration, GitHub OAuth callback과 검증 절차를 정의한다. 실제 Vercel 프로젝트 연결, 호스팅 DB 생성과 첫 배포는 Day 29에서 수행한다.
 
 ## 2. 환경 분리
 

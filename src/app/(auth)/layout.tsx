@@ -18,7 +18,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
           <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-white">
             <Braces aria-hidden="true" className="size-5" />
           </span>
-          <span className="text-lg font-bold text-foreground">DevLog</span>
+          <span className="text-lg font-bold text-foreground">잔디노트</span>
         </Link>
         <section className="rounded-card border border-border bg-card p-6 shadow-card sm:p-8">
           {children}

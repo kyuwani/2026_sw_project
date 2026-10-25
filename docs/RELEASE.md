@@ -1,10 +1,10 @@
-# DevLog MVP 릴리스 판정
+# 잔디노트 MVP 릴리스 판정
 
 ## 현재 판정
 
 상태: **릴리스 완료** (2026-10-15)
 
-로컬 전체 품질 검증과 Vercel Preview·Production 배포를 통과했다. Production에서 GitHub OAuth, Project·Task·Learning Log, Dashboard·Analytics, GitHub Repository·최근 Commit까지 핵심 사용자 흐름을 확인했으며 치명적이거나 높은 우선순위의 알려진 버그가 없어 DevLog MVP를 릴리스 완료로 판정한다.
+로컬 전체 품질 검증과 Vercel Preview·Production 배포를 통과했다. Production에서 GitHub OAuth, Project·Task·Learning Log, Dashboard·Analytics, GitHub Repository·최근 Commit까지 핵심 사용자 흐름을 확인했으며 치명적이거나 높은 우선순위의 알려진 버그가 없어 잔디노트 MVP를 릴리스 완료로 판정한다.
 
 ## 완료된 검증
 

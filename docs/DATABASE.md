@@ -1,8 +1,8 @@
-# DevLog 데이터베이스 설계
+# 잔디노트 데이터베이스 설계
 
 ## 1. 문서 목적
 
-이 문서는 DevLog MVP에 실제 적용한 PostgreSQL/Prisma 데이터 모델, 관계, 제약 조건과 삭제 정책을 정의한다. `prisma/schema.prisma`를 변경할 때 이 문서도 함께 갱신한다.
+이 문서는 잔디노트 MVP에 실제 적용한 PostgreSQL/Prisma 데이터 모델, 관계, 제약 조건과 삭제 정책을 정의한다. `prisma/schema.prisma`를 변경할 때 이 문서도 함께 갱신한다.
 
 ## 2. 현재 구성
 
