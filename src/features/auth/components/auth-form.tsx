@@ -28,7 +28,7 @@ export function AuthForm({ mode, githubEnabled }: AuthFormProps) {
     <div>
       <div className="mb-8 space-y-2">
         <h1 className="text-2xl font-bold text-foreground">
-          {isSignUp ? "DevLog 시작하기" : "다시 만나 반가워요"}
+          {isSignUp ? "잔디노트 시작하기" : "다시 만나 반가워요"}
         </h1>
         <p className="text-sm leading-6 text-muted">
           {isSignUp

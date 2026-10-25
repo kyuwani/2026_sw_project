@@ -137,7 +137,7 @@ export default async function DashboardPage() {
         {pageHeader}
         <EmptyState
           icon={Rocket}
-          title="DevLog를 시작해 보세요"
+          title="잔디노트를 시작해 보세요"
           description="첫 프로젝트를 만들거나 오늘 배운 내용을 기록하면 진행 상황과 학습 흐름이 Dashboard에 쌓입니다."
           action={
             <div className="flex w-full flex-col gap-3 sm:flex-row">

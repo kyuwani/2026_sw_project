@@ -50,7 +50,7 @@ export function Sidebar({
             <Braces aria-hidden="true" className="size-5" strokeWidth={2.25} />
           </span>
           <span>
-            <span className="block text-base font-bold tracking-tight">DevLog</span>
+            <span className="block text-base font-bold tracking-tight">잔디노트</span>
             <span className="block text-[11px] font-medium text-sidebar-muted">
               Developer workspace
             </span>

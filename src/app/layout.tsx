@@ -5,8 +5,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "DevLog",
-    template: "%s | DevLog",
+    default: "잔디노트",
+    template: "%s | 잔디노트",
   },
   description: "프로젝트와 학습 성장을 한곳에서 관리하는 개발자 대시보드",
 };

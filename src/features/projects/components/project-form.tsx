@@ -61,7 +61,7 @@ export function ProjectForm({ project }: ProjectFormProps) {
             label="프로젝트 이름"
             maxLength={100}
             name="title"
-            placeholder="예: DevLog"
+            placeholder="예: 잔디노트"
             required
           />
 

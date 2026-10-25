@@ -163,7 +163,7 @@ function getRequestHeaders(accessToken: string): HeadersInit {
   return {
     Accept: "application/vnd.github+json",
     Authorization: `Bearer ${accessToken}`,
-    "User-Agent": "DevLog",
+    "User-Agent": "JandiNote",
     "X-GitHub-Api-Version": GITHUB_API_VERSION,
   };
 }

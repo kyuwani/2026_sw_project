@@ -1,8 +1,8 @@
-# DevLog 개발 규칙
+# 잔디노트 개발 규칙
 
 ## 1. 기본 원칙
 
-- 이 프로젝트의 이름은 `DevLog`다.
+- 이 프로젝트의 이름은 `잔디노트`다. 패키지명 등 영문 식별자가 필요한 곳에는 `jandi-note`를 사용한다.
 - Next.js App Router와 TypeScript strict mode를 기준으로 개발한다.
 - 기존 코드, 문서, Git 상태와 설치된 패키지를 먼저 확인한 뒤 작업한다.
 - Server Component를 기본으로 사용하고 상호작용이 필요한 가장 작은 범위에만 `"use client"`를 사용한다.
